@@ -1,1 +1,1037 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MoonStep — İnsanlığın Ay Yolculuğu</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #050a14;
+      --surface: #0d1625;
+      --surface2: #111e30;
+      --accent: #c8a96e;
+      --accent2: #4a9eff;
+      --text: #e8e4d8;
+      --muted: #6b7a8d;
+      --border: rgba(200,169,110,0.15);
+      --glow: rgba(200,169,110,0.08);
+    }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; overflow-x: hidden; }
 
+    /* ===== LOADING SCREEN ===== */
+    .loader-screen {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--bg);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      transition: opacity 0.6s, visibility 0.6s;
+    }
+    .loader-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    .loader-moon {
+      width: 80px; height: 80px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #e8e4d8, #888 60%, #333);
+      box-shadow: 0 0 60px rgba(200,169,110,0.3), inset -10px -5px 20px rgba(0,0,0,0.5);
+      animation: loaderPulse 1.5s ease-in-out infinite;
+    }
+    @keyframes loaderPulse { 0%,100%{transform:scale(1);box-shadow:0 0 60px rgba(200,169,110,0.3)} 50%{transform:scale(1.08);box-shadow:0 0 90px rgba(200,169,110,0.5)} }
+    .loader-text {
+      margin-top: 24px;
+      font-family: 'Space Mono', monospace;
+      font-size: 12px; letter-spacing: 0.3em;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+    .loader-bar { width: 200px; height: 2px; background: var(--border); margin-top: 16px; border-radius: 2px; overflow: hidden; }
+    .loader-bar-fill { height: 100%; width: 0%; background: var(--accent); animation: loaderFill 2.5s ease forwards; }
+    @keyframes loaderFill { to { width: 100% } }
+
+    /* ===== STARS ===== */
+    .stars { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; }
+    .star { position:absolute; background:white; border-radius:50%; animation: twinkle var(--d,3s) ease-in-out infinite; animation-delay:var(--delay,0s); }
+    @keyframes twinkle { 0%,100%{opacity:var(--min-op,0.2)} 50%{opacity:var(--max-op,0.8)} }
+
+    /* ===== NAV ===== */
+    nav {
+      position:fixed; top:0; left:0; right:0; z-index:100;
+      padding:20px 40px; display:flex; justify-content:space-between; align-items:center;
+      background:linear-gradient(to bottom,rgba(5,10,20,0.95),transparent);
+      transition: background 0.3s, backdrop-filter 0.3s;
+    }
+    nav.scrolled { background: rgba(5,10,20,0.92); backdrop-filter: blur(20px); }
+    .logo { font-family:'Space Mono',monospace; font-size:13px; letter-spacing:0.2em; color:var(--accent); text-transform:uppercase; cursor:pointer; }
+    .logo span { color:var(--muted); }
+    .nav-links { display:flex; gap:32px; list-style:none; }
+    .nav-links a { color:var(--muted); text-decoration:none; font-size:12px; letter-spacing:0.12em; text-transform:uppercase; transition:color 0.2s; font-family:'Space Mono',monospace; position:relative; }
+    .nav-links a:hover { color:var(--accent); }
+    .nav-links a::after { content:''; position:absolute; bottom:-4px; left:0; width:0; height:1px; background:var(--accent); transition:width 0.3s; }
+    .nav-links a:hover::after { width:100%; }
+
+    /* HAMBURGER */
+    .hamburger { display:none; flex-direction:column; gap:5px; cursor:pointer; z-index:101; padding:4px; }
+    .hamburger span { width:24px; height:1.5px; background:var(--accent); transition:all 0.3s; display:block; }
+    .hamburger.active span:nth-child(1) { transform:rotate(45deg) translate(4px,5px); }
+    .hamburger.active span:nth-child(2) { opacity:0; }
+    .hamburger.active span:nth-child(3) { transform:rotate(-45deg) translate(4px,-5px); }
+
+    .mobile-menu {
+      display:none; position:fixed; inset:0; z-index:99;
+      background:rgba(5,10,20,0.97); backdrop-filter:blur(30px);
+      flex-direction:column; align-items:center; justify-content:center; gap:32px;
+    }
+    .mobile-menu.open { display:flex; }
+    .mobile-menu a {
+      color:var(--text); text-decoration:none; font-size:1.5rem; font-weight:700;
+      letter-spacing:0.1em; transition:color 0.2s;
+    }
+    .mobile-menu a:hover { color:var(--accent); }
+
+    /* ===== HERO ===== */
+    .hero { position:relative; min-height:100vh; display:flex; align-items:center; justify-content:center; z-index:1; overflow:hidden; }
+    #moonCanvas { position:absolute; top:0; left:0; width:100%; height:100%; z-index:0; }
+    .hero-content { position:relative; z-index:2; text-align:center; padding:120px 40px 80px; max-width:760px; }
+    .hero-tag { display:inline-block; font-family:'Space Mono',monospace; font-size:11px; letter-spacing:0.25em; color:var(--accent); text-transform:uppercase; border:1px solid var(--border); padding:6px 16px; border-radius:2px; margin-bottom:32px; animation:fadeUp 1s ease both; }
+    .hero h1 { font-size:clamp(3rem,8vw,6.5rem); font-weight:800; line-height:0.95; letter-spacing:-0.02em; margin-bottom:28px; animation:fadeUp 1s 0.2s ease both; }
+    .hero h1 em { font-style:normal; color:var(--accent); display:block; }
+    .hero p { font-size:1.1rem; color:var(--muted); line-height:1.7; max-width:520px; margin:0 auto 48px; animation:fadeUp 1s 0.4s ease both; }
+    .hero-cta { display:inline-flex; gap:16px; flex-wrap:wrap; justify-content:center; animation:fadeUp 1s 0.6s ease both; }
+    .btn { padding:14px 32px; font-family:'Space Mono',monospace; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; text-decoration:none; border-radius:2px; transition:all 0.2s; cursor:pointer; border:none; }
+    .btn-primary { background:var(--accent); color:var(--bg); font-weight:700; }
+    .btn-primary:hover { background:#e0c07e; transform:translateY(-2px); box-shadow:0 8px 30px rgba(200,169,110,0.3); }
+    .btn-secondary { border:1px solid var(--border); color:var(--text); background:transparent; }
+    .btn-secondary:hover { border-color:var(--accent); color:var(--accent); }
+    .btn-launch { background:linear-gradient(135deg,#e05a5a,#c84040); color:#fff; font-weight:700; animation:launchGlow 2s ease-in-out infinite; }
+    .btn-launch:hover { transform:translateY(-2px) scale(1.02); }
+    @keyframes launchGlow { 0%,100%{box-shadow:0 0 20px rgba(224,90,90,0.3)} 50%{box-shadow:0 0 40px rgba(224,90,90,0.6)} }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ===== LAUNCH SIMULATION ===== */
+    .launch-overlay {
+      position:fixed; inset:0; z-index:200;
+      background:#000; display:none;
+      flex-direction:column; align-items:center; justify-content:center;
+      overflow:hidden; cursor:default;
+    }
+    .launch-overlay.active { display:flex; }
+
+    .launch-stars-bg { position:absolute; inset:0; overflow:hidden; }
+    .launch-star { position:absolute; background:#fff; border-radius:50%; }
+
+    .countdown-display {
+      font-family:'Space Mono',monospace; font-size:clamp(5rem,15vw,12rem);
+      font-weight:700; color:var(--accent);
+      text-shadow:0 0 80px rgba(200,169,110,0.5);
+      z-index:2; transition:all 0.3s;
+    }
+    .countdown-label {
+      font-family:'Space Mono',monospace; font-size:14px;
+      letter-spacing:0.3em; color:var(--muted);
+      margin-top:12px; z-index:2;
+    }
+
+    .rocket-container {
+      position:absolute; bottom:-120px; left:50%; transform:translateX(-50%);
+      z-index:3; transition:all 0.1s;
+    }
+    .rocket-svg { width:60px; filter:drop-shadow(0 0 30px rgba(200,169,110,0.5)); }
+    .flame-container { position:absolute; bottom:-30px; left:50%; transform:translateX(-50%); }
+    .flame {
+      width:20px; height:0; background:linear-gradient(to bottom,#ff6b35,#ffd700,transparent);
+      border-radius:0 0 50% 50%; margin:0 auto;
+      animation:none; transition:height 0.5s;
+    }
+    .flame.active { height:60px; animation:flicker 0.1s infinite alternate; }
+    @keyframes flicker { from{height:55px;opacity:0.9} to{height:65px;opacity:1} }
+
+    .launch-phase-text {
+      position:absolute; bottom:80px; left:50%; transform:translateX(-50%);
+      font-family:'Space Mono',monospace; font-size:12px;
+      letter-spacing:0.2em; color:var(--accent2);
+      text-transform:uppercase; white-space:nowrap; z-index:5;
+      opacity:0; transition:opacity 0.5s;
+    }
+    .launch-phase-text.show { opacity:1; }
+
+    .speed-lines {
+      position:absolute; inset:0; overflow:hidden; opacity:0; transition:opacity 0.5s; z-index:1;
+    }
+    .speed-lines.active { opacity:1; }
+    .speed-line {
+      position:absolute; width:2px; background:linear-gradient(to bottom,transparent,rgba(255,255,255,0.6),transparent);
+      animation:speedDown 0.4s linear infinite;
+    }
+    @keyframes speedDown { from{transform:translateY(-100vh)} to{transform:translateY(100vh)} }
+
+    .moon-landing-scene {
+      position:absolute; inset:0; display:none;
+      flex-direction:column; align-items:center; justify-content:flex-end;
+      z-index:4; overflow:hidden;
+    }
+    .moon-surface {
+      width:120%; height:40%; background:linear-gradient(to bottom,transparent 0%,#1a1a1a 20%,#2a2a2a 60%,#333);
+      border-radius:50% 50% 0 0; position:relative;
+    }
+    .moon-surface::before {
+      content:''; position:absolute; inset:0;
+      background:radial-gradient(circle at 30% 40%,rgba(60,60,60,0.5) 0%,transparent 40%),
+                 radial-gradient(circle at 70% 30%,rgba(50,50,50,0.4) 0%,transparent 30%),
+                 radial-gradient(circle at 50% 60%,rgba(40,40,40,0.3) 0%,transparent 35%);
+    }
+    .crater { position:absolute; border-radius:50%; background:rgba(0,0,0,0.2); border:1px solid rgba(60,60,60,0.3); }
+    .landing-rocket {
+      position:absolute; top:20%; left:50%; transform:translateX(-50%);
+      z-index:5; transition:top 3s ease-in-out;
+    }
+    .landing-success {
+      position:absolute; top:30%; left:50%; transform:translateX(-50%);
+      text-align:center; z-index:6; opacity:0; transition:opacity 1s;
+    }
+    .landing-success h2 {
+      font-size:clamp(2rem,5vw,3.5rem); color:var(--accent);
+      margin-bottom:12px;
+    }
+    .landing-success p {
+      font-family:'Space Mono',monospace; font-size:13px;
+      color:var(--muted); letter-spacing:0.15em;
+    }
+    .close-launch {
+      position:absolute; top:24px; right:24px; z-index:10;
+      background:none; border:1px solid var(--border);
+      color:var(--muted); font-family:'Space Mono',monospace;
+      font-size:11px; padding:8px 16px; cursor:pointer;
+      letter-spacing:0.1em; transition:all 0.2s;
+    }
+    .close-launch:hover { border-color:var(--accent); color:var(--accent); }
+
+    /* ===== STATS BAR ===== */
+    .stats-bar { position:relative; z-index:1; display:flex; justify-content:center; border-top:1px solid var(--border); border-bottom:1px solid var(--border); flex-wrap:wrap; }
+    .stat { flex:1; min-width:160px; max-width:220px; padding:32px 24px; text-align:center; border-right:1px solid var(--border); }
+    .stat:last-child { border-right:none; }
+    .stat-number { font-size:2.2rem; font-weight:800; color:var(--accent); font-family:'Space Mono',monospace; display:block; }
+    .stat-label { font-size:11px; color:var(--muted); letter-spacing:0.15em; text-transform:uppercase; margin-top:4px; font-family:'Space Mono',monospace; }
+
+    /* ===== SECTIONS ===== */
+    .section { position:relative; z-index:1; padding:100px 40px; max-width:1200px; margin:0 auto; }
+    .section-label { font-family:'Space Mono',monospace; font-size:11px; letter-spacing:0.25em; color:var(--accent); text-transform:uppercase; margin-bottom:16px; }
+    .section-title { font-size:clamp(2rem,4vw,3rem); font-weight:800; line-height:1.1; margin-bottom:60px; max-width:500px; }
+    .section-title span { color:var(--accent); }
+
+    /* ===== MISSIONS ===== */
+    .missions-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:2px; }
+    .mission-card { background:var(--surface); border:1px solid var(--border); overflow:hidden; position:relative; transition:all 0.3s; }
+    .mission-card:hover { transform:translateY(-4px); box-shadow:0 20px 60px rgba(0,0,0,0.4); }
+    .mission-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--accent); transform:scaleX(0); transform-origin:left; transition:transform 0.3s; z-index:1; }
+    .mission-card:hover::before { transform:scaleX(1); }
+    .mission-img { width:100%; height:200px; object-fit:cover; display:block; filter:brightness(0.75) saturate(0.6); transition:filter 0.3s; }
+    .mission-card:hover .mission-img { filter:brightness(0.9) saturate(0.8); }
+    .mission-body { padding:28px; }
+    .mission-year { font-family:'Space Mono',monospace; font-size:11px; color:var(--accent); letter-spacing:0.2em; margin-bottom:8px; }
+    .mission-name { font-size:1.4rem; font-weight:800; margin-bottom:6px; }
+    .mission-sub { font-size:0.82rem; color:var(--accent); letter-spacing:0.1em; margin-bottom:12px; font-family:'Space Mono',monospace; }
+    .mission-desc { font-size:0.875rem; color:var(--muted); line-height:1.7; margin-bottom:20px; }
+    .mission-tags { display:flex; flex-wrap:wrap; gap:8px; }
+    .tag { font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; padding:4px 10px; border:1px solid var(--border); color:var(--muted); border-radius:2px; }
+    .tag.success { border-color:rgba(74,158,255,0.3); color:var(--accent2); }
+    .tag.milestone { border-color:rgba(200,169,110,0.3); color:var(--accent); }
+
+    /* ===== ASTRONAUT PROFILES ===== */
+    .astronaut-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:20px; }
+    .astronaut-card {
+      background:var(--surface); border:1px solid var(--border);
+      padding:28px 20px; text-align:center;
+      transition:all 0.3s; position:relative; overflow:hidden;
+    }
+    .astronaut-card:hover { transform:translateY(-4px); border-color:var(--accent); }
+    .astronaut-card::after {
+      content:''; position:absolute; top:0; left:0; right:0; height:3px;
+      background:linear-gradient(90deg,var(--accent),var(--accent2));
+      transform:scaleX(0); transition:transform 0.3s;
+    }
+    .astronaut-card:hover::after { transform:scaleX(1); }
+    .astronaut-avatar {
+      width:72px; height:72px; border-radius:50%; margin:0 auto 16px;
+      background:var(--surface2); border:2px solid var(--border);
+      display:flex; align-items:center; justify-content:center;
+      font-size:28px; transition:border-color 0.3s;
+    }
+    .astronaut-card:hover .astronaut-avatar { border-color:var(--accent); }
+    .astronaut-name { font-size:1rem; font-weight:700; margin-bottom:4px; }
+    .astronaut-role { font-family:'Space Mono',monospace; font-size:10px; color:var(--accent); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:12px; }
+    .astronaut-fact { font-size:0.8rem; color:var(--muted); line-height:1.5; }
+
+    /* ===== MAP ===== */
+    .map-wrap { position:relative; display:inline-block; width:100%; max-width:800px; }
+    .moon-map { width:100%; border-radius:50%; display:block; filter:brightness(0.8) saturate(0.5); }
+    .landing-dot { position:absolute; width:14px; height:14px; border-radius:50%; background:var(--accent); border:2px solid #fff; cursor:pointer; transform:translate(-50%,-50%); transition:all 0.2s; z-index:2; }
+    .landing-dot::after { content:''; position:absolute; inset:-6px; border-radius:50%; border:1px solid rgba(200,169,110,0.4); animation:ping 2s ease-in-out infinite; }
+    @keyframes ping { 0%{transform:scale(1);opacity:1} 100%{transform:scale(2.5);opacity:0} }
+    .landing-dot:hover { transform:translate(-50%,-50%) scale(1.4); background:#fff; }
+    .dot-label { position:absolute; font-family:'Space Mono',monospace; font-size:9px; color:var(--accent); white-space:nowrap; pointer-events:none; }
+    .map-tooltip { position:absolute; background:var(--surface2); border:1px solid var(--border); padding:16px 20px; border-radius:4px; font-size:0.85rem; max-width:220px; z-index:10; pointer-events:none; opacity:0; transition:opacity 0.2s; }
+    .map-tooltip.show { opacity:1; }
+    .map-tooltip strong { color:var(--accent); display:block; margin-bottom:4px; font-family:'Space Mono',monospace; font-size:11px; }
+
+    /* ===== TIMELINE ===== */
+    .timeline-wrap { position:relative; padding-left:40px; }
+    .timeline-line { position:absolute; left:0; top:8px; bottom:8px; width:1px; background:linear-gradient(to bottom,transparent,var(--accent),transparent); }
+    .timeline-item { position:relative; padding:0 0 48px 40px; }
+    .timeline-item::before { content:''; position:absolute; left:-4px; top:6px; width:9px; height:9px; border-radius:50%; background:var(--bg); border:1px solid var(--accent); transition:background 0.2s; }
+    .timeline-item:hover::before { background:var(--accent); }
+    .tl-year { font-family:'Space Mono',monospace; font-size:11px; color:var(--accent); letter-spacing:0.2em; margin-bottom:6px; }
+    .tl-title { font-size:1.1rem; font-weight:700; margin-bottom:8px; }
+    .tl-desc { font-size:0.875rem; color:var(--muted); line-height:1.65; max-width:560px; }
+
+    /* ===== MOON FACTS ===== */
+    .facts-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:16px; }
+    .fact-card {
+      background:var(--surface); border:1px solid var(--border); padding:24px;
+      transition:all 0.3s; cursor:default;
+    }
+    .fact-card:hover { border-color:var(--accent); transform:translateY(-2px); }
+    .fact-icon { font-size:1.8rem; margin-bottom:12px; }
+    .fact-title { font-size:0.9rem; font-weight:700; margin-bottom:8px; color:var(--accent); }
+    .fact-text { font-size:0.82rem; color:var(--muted); line-height:1.6; }
+
+    /* ===== QUIZ ===== */
+    .quiz-wrap { background:var(--surface); border:1px solid var(--border); padding:48px; max-width:680px; }
+    .quiz-progress { font-family:'Space Mono',monospace; font-size:11px; color:var(--muted); letter-spacing:0.15em; margin-bottom:8px; }
+    .quiz-bar { height:2px; background:var(--border); margin-bottom:36px; }
+    .quiz-bar-fill { height:100%; background:var(--accent); transition:width 0.4s ease; }
+    .quiz-question { font-size:1.25rem; font-weight:700; line-height:1.4; margin-bottom:28px; }
+    .quiz-options { display:flex; flex-direction:column; gap:12px; }
+    .quiz-option { padding:16px 20px; border:1px solid var(--border); background:transparent; color:var(--text); font-family:'Syne',sans-serif; font-size:0.9rem; text-align:left; cursor:pointer; transition:all 0.2s; border-radius:2px; }
+    .quiz-option:hover { border-color:var(--accent); background:var(--glow); }
+    .quiz-option.correct { border-color:#4a9eff; background:rgba(74,158,255,0.08); color:#4a9eff; }
+    .quiz-option.wrong { border-color:#e05a5a; background:rgba(224,90,90,0.08); color:#e05a5a; }
+    .quiz-feedback { margin-top:20px; font-size:0.875rem; color:var(--muted); line-height:1.6; min-height:48px; }
+    .quiz-next { margin-top:24px; display:none; }
+    .quiz-score { display:none; text-align:center; padding:24px 0; }
+    .score-num { font-size:4rem; font-weight:800; color:var(--accent); font-family:'Space Mono',monospace; }
+
+    /* ===== FOOTER ===== */
+    footer { position:relative; z-index:1; border-top:1px solid var(--border); padding:40px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+    footer p { font-family:'Space Mono',monospace; font-size:11px; color:var(--muted); letter-spacing:0.1em; }
+
+    /* ===== SCROLL TO TOP ===== */
+    .scroll-top {
+      position:fixed; bottom:24px; right:24px; z-index:50;
+      width:44px; height:44px; border-radius:50%;
+      background:var(--surface); border:1px solid var(--border);
+      color:var(--accent); font-size:18px;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer; opacity:0; visibility:hidden;
+      transition:all 0.3s;
+    }
+    .scroll-top.show { opacity:1; visibility:visible; }
+    .scroll-top:hover { background:var(--accent); color:var(--bg); transform:translateY(-2px); }
+
+    /* ===== REVEAL ===== */
+    .reveal { opacity:0; transform:translateY(30px); transition:all 0.7s ease; }
+    .reveal.visible { opacity:1; transform:translateY(0); }
+
+    /* ===== AUDIO TOGGLE ===== */
+    .audio-toggle {
+      position:fixed; bottom:24px; left:24px; z-index:50;
+      width:44px; height:44px; border-radius:50%;
+      background:var(--surface); border:1px solid var(--border);
+      color:var(--muted); font-size:16px;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer; transition:all 0.3s;
+    }
+    .audio-toggle:hover { border-color:var(--accent); color:var(--accent); }
+    .audio-toggle.active { border-color:var(--accent); color:var(--accent); }
+
+    /* ===== RESPONSIVE ===== */
+    @media(max-width:768px) {
+      nav { padding:16px 20px; }
+      .nav-links { display:none; }
+      .hamburger { display:flex; }
+      .hero-content { padding:100px 20px 60px; }
+      .section { padding:60px 20px; }
+      .quiz-wrap { padding:28px 20px; }
+      .missions-grid { grid-template-columns:1fr; }
+      .astronaut-grid { grid-template-columns:repeat(2,1fr); }
+      .stat { min-width:120px; padding:20px 12px; }
+      .stat-number { font-size:1.6rem; }
+      footer { padding:24px 20px; flex-direction:column; text-align:center; }
+    }
+    @media(max-width:480px) {
+      .astronaut-grid { grid-template-columns:1fr; }
+      .facts-grid { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOADING SCREEN -->
+<div class="loader-screen" id="loader">
+  <div class="loader-moon"></div>
+  <div class="loader-text">MoonStep Yükleniyor...</div>
+  <div class="loader-bar"><div class="loader-bar-fill"></div></div>
+</div>
+
+<!-- LAUNCH SIMULATION -->
+<div class="launch-overlay" id="launchOverlay">
+  <button class="close-launch" onclick="closeLaunch()">✕ KAPAT</button>
+  <div class="launch-stars-bg" id="launchStars"></div>
+  <div class="speed-lines" id="speedLines"></div>
+  <div class="countdown-display" id="countdownDisplay">10</div>
+  <div class="countdown-label" id="countdownLabel">FIRLATMAYA HAZIRLIK</div>
+  <div class="rocket-container" id="rocketContainer">
+    <svg class="rocket-svg" viewBox="0 0 60 120" fill="none">
+      <path d="M30 0C30 0 10 30 10 70C10 90 15 100 20 105L20 115C20 118 25 120 30 120C35 120 40 118 40 115L40 105C45 100 50 90 50 70C50 30 30 0 30 0Z" fill="#d4d4d4" stroke="#aaa" stroke-width="0.5"/>
+      <circle cx="30" cy="45" r="8" fill="#1a2a44" stroke="#4a9eff" stroke-width="1"/>
+      <circle cx="30" cy="45" r="4" fill="#4a9eff" opacity="0.3"/>
+      <path d="M10 70L2 95L15 85Z" fill="#c8a96e"/>
+      <path d="M50 70L58 95L45 85Z" fill="#c8a96e"/>
+      <rect x="25" y="85" width="10" height="8" rx="1" fill="#888"/>
+    </svg>
+    <div class="flame-container"><div class="flame" id="rocketFlame"></div></div>
+  </div>
+  <div class="moon-landing-scene" id="landingScene">
+    <div class="landing-success" id="landingSuccess">
+      <h2>🌕 İniş Başarılı!</h2>
+      <p>"Bu insanlık için küçük bir adım,<br>insanlık için dev bir sıçrama."</p>
+      <p style="margin-top:16px;color:var(--accent)">— Neil Armstrong, 20 Temmuz 1969</p>
+      <button class="btn btn-primary" style="margin-top:32px" onclick="closeLaunch()">Keşfe Devam Et →</button>
+    </div>
+    <div class="landing-rocket" id="landingRocket">
+      <svg width="40" viewBox="0 0 60 120" fill="none">
+        <path d="M30 0C30 0 10 30 10 70C10 90 15 100 20 105L20 115C20 118 25 120 30 120C35 120 40 118 40 115L40 105C45 100 50 90 50 70C50 30 30 0 30 0Z" fill="#d4d4d4" stroke="#aaa" stroke-width="0.5"/>
+        <circle cx="30" cy="45" r="8" fill="#1a2a44" stroke="#4a9eff" stroke-width="1"/>
+        <path d="M10 70L2 95L15 85Z" fill="#c8a96e"/>
+        <path d="M50 70L58 95L45 85Z" fill="#c8a96e"/>
+      </svg>
+    </div>
+    <div class="moon-surface">
+      <div class="crater" style="width:60px;height:60px;left:20%;top:30%"></div>
+      <div class="crater" style="width:35px;height:35px;left:60%;top:20%"></div>
+      <div class="crater" style="width:80px;height:80px;left:70%;top:50%"></div>
+      <div class="crater" style="width:25px;height:25px;left:40%;top:60%"></div>
+      <div class="crater" style="width:45px;height:45px;left:15%;top:65%"></div>
+    </div>
+  </div>
+  <div class="launch-phase-text" id="phaseText"></div>
+</div>
+
+<div class="stars" id="stars"></div>
+
+<!-- AUDIO TOGGLE -->
+<div class="audio-toggle" id="audioToggle" title="Ses Aç/Kapat">🔇</div>
+
+<!-- SCROLL TO TOP -->
+<div class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</div>
+
+<!-- NAV -->
+<nav id="navbar">
+  <div class="logo" onclick="window.scrollTo({top:0,behavior:'smooth'})">Moon<span>/</span>Step</div>
+  <ul class="nav-links">
+    <li><a href="#missions">Görevler</a></li>
+    <li><a href="#astronauts">Astronotlar</a></li>
+    <li><a href="#map">Harita</a></li>
+    <li><a href="#timeline">Tarihçe</a></li>
+    <li><a href="#facts">Bilgiler</a></li>
+    <li><a href="#quiz">Test</a></li>
+  </ul>
+  <div class="hamburger" id="hamburger" onclick="toggleMobile()">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<!-- MOBILE MENU -->
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#missions" onclick="toggleMobile()">Görevler</a>
+  <a href="#astronauts" onclick="toggleMobile()">Astronotlar</a>
+  <a href="#map" onclick="toggleMobile()">Harita</a>
+  <a href="#timeline" onclick="toggleMobile()">Tarihçe</a>
+  <a href="#facts" onclick="toggleMobile()">Bilgiler</a>
+  <a href="#quiz" onclick="toggleMobile()">Test</a>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <canvas id="moonCanvas"></canvas>
+  <div class="hero-content">
+    <div class="hero-tag">🌕 İnteraktif Uzay Keşfi</div>
+    <h1>İnsanlığın<em>Ay Adımları</em></h1>
+    <p>Apollo'dan Artemis'e uzanan yolculuğu keşfet. Teknik doğruluğa sadık, öğretici ve etkileşimli bir deneyim.</p>
+    <div class="hero-cta">
+      <a href="#missions" class="btn btn-primary">Görevleri Keşfet</a>
+      <button class="btn btn-launch" onclick="startLaunch()">🚀 Fırlatma Simülasyonu</button>
+      <a href="#quiz" class="btn btn-secondary">Bilgini Test Et</a>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stat reveal"><span class="stat-number" data-count="12">0</span><span class="stat-label">Ay'a İnen İnsan</span></div>
+  <div class="stat reveal"><span class="stat-number" data-count="6">0</span><span class="stat-label">Başarılı İniş</span></div>
+  <div class="stat reveal"><span class="stat-number" data-count="382">0</span><span class="stat-label">kg Ay Toprağı</span></div>
+  <div class="stat reveal"><span class="stat-number" data-count="1969">0</span><span class="stat-label">İlk İniş Yılı</span></div>
+</div>
+
+<!-- MISSIONS -->
+<section class="section" id="missions">
+  <p class="section-label">// görev arşivi</p>
+  <h2 class="section-title">Tarihî <span>Ay Görevleri</span></h2>
+  <div class="missions-grid">
+    <div class="mission-card reveal">
+      <img class="mission-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Aldrin_Apollo_11_original.jpg/800px-Aldrin_Apollo_11_original.jpg" alt="Apollo 11">
+      <div class="mission-body">
+        <div class="mission-year">20 Temmuz 1969</div>
+        <div class="mission-name">Apollo 11</div>
+        <div class="mission-sub">İnsanlığın İlk Adımı</div>
+        <div class="mission-desc">Neil Armstrong ve Buzz Aldrin, Tranquility Base'de tarihin ilk insanlı Ay inişini gerçekleştirdi.</div>
+        <div class="mission-tags"><span class="tag milestone">Tarihî</span><span class="tag success">Başarılı</span></div>
+      </div>
+    </div>
+    <div class="mission-card reveal">
+      <img class="mission-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Apollo12_ConradWithSurveyor.jpg/800px-Apollo12_ConradWithSurveyor.jpg" alt="Apollo 12">
+      <div class="mission-body">
+        <div class="mission-year">19 Kasım 1969</div>
+        <div class="mission-name">Apollo 12</div>
+        <div class="mission-sub">Hassas İniş</div>
+        <div class="mission-desc">Pete Conrad ve Alan Bean, Surveyor 3 uzay aracının tam yanına hassas iniş yaparak yüzeyde 7.5 saat geçirdi.</div>
+        <div class="mission-tags"><span class="tag success">Başarılı</span><span class="tag">Okyanus Fırtınası</span></div>
+      </div>
+    </div>
+    <div class="mission-card reveal">
+      <img class="mission-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Apollo13_-_Original_crewmembers.jpg/800px-Apollo13_-_Original_crewmembers.jpg" alt="Apollo 13">
+      <div class="mission-body">
+        <div class="mission-year">13 Nisan 1970</div>
+        <div class="mission-name">Apollo 13</div>
+        <div class="mission-sub">Başarılı Başarısızlık</div>
+        <div class="mission-desc">Oksijen tankı patlamasıyla Ay inişi iptal edildi. Mürettebat 6 günde güvenle Dünya'ya döndü.</div>
+        <div class="mission-tags"><span class="tag">İptal</span><span class="tag milestone">Mürettebat Kurtarıldı</span></div>
+      </div>
+    </div>
+    <div class="mission-card reveal">
+      <img class="mission-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Apollo_15_flag%2C_rover%2C_LM%2C_Irwin.jpg/800px-Apollo_15_flag%2C_rover%2C_LM%2C_Irwin.jpg" alt="Apollo 15">
+      <div class="mission-body">
+        <div class="mission-year">30 Temmuz 1971</div>
+        <div class="mission-name">Apollo 15</div>
+        <div class="mission-sub">Ay Arabası İlk Kez</div>
+        <div class="mission-desc">David Scott ve James Irwin, ilk kez Ay Rover aracını kullandı. Hadley-Apennine'de 77 km yol kat edildi.</div>
+        <div class="mission-tags"><span class="tag milestone">Rover İlk</span><span class="tag success">Başarılı</span></div>
+      </div>
+    </div>
+    <div class="mission-card reveal">
+      <img class="mission-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Eugene_cernan_on_moon.jpg/800px-Eugene_cernan_on_moon.jpg" alt="Apollo 17">
+      <div class="mission-body">
+        <div class="mission-year">11 Aralık 1972</div>
+        <div class="mission-name">Apollo 17</div>
+        <div class="mission-sub">Son İnsanlı Ay Görevi</div>
+        <div class="mission-desc">Eugene Cernan ve Harrison Schmitt, Ay'daki son insanlı görevi tamamladı. Bugüne kadar Ay'a son inen insanlar.</div>
+        <div class="mission-tags"><span class="tag milestone">Son Görev</span><span class="tag success">Başarılı</span></div>
+      </div>
+    </div>
+    <div class="mission-card reveal">
+      <img class="mission-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Artemis_I_Launch_NOV_2022.jpg/800px-Artemis_I_Launch_NOV_2022.jpg" alt="Artemis">
+      <div class="mission-body">
+        <div class="mission-year">2025+</div>
+        <div class="mission-name">Artemis III</div>
+        <div class="mission-sub">Geri Dönüş</div>
+        <div class="mission-desc">İlk kez bir kadın ve bir siyahî astronot Ay yüzeyine adım atacak. SpaceX Starship kullanılacak.</div>
+        <div class="mission-tags"><span class="tag milestone">Planlanan</span><span class="tag">Artemis</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ASTRONAUTS -->
+<section class="section" id="astronauts" style="border-top:1px solid var(--border)">
+  <p class="section-label">// kaşifler</p>
+  <h2 class="section-title">Ay'a <span>Adım Atan İnsanlar</span></h2>
+  <div class="astronaut-grid">
+    <div class="astronaut-card reveal">
+      <div class="astronaut-avatar">👨‍🚀</div>
+      <div class="astronaut-name">Neil Armstrong</div>
+      <div class="astronaut-role">Apollo 11 • Komutan</div>
+      <div class="astronaut-fact">Ay'a ilk adımı atan insan. Havacılık mühendisi ve test pilotuydu. "Bu insanlık için küçük bir adım…"</div>
+    </div>
+    <div class="astronaut-card reveal">
+      <div class="astronaut-avatar">👨‍🚀</div>
+      <div class="astronaut-name">Buzz Aldrin</div>
+      <div class="astronaut-role">Apollo 11 • Ay Modülü Pilotu</div>
+      <div class="astronaut-fact">Ay'a inen ikinci insan. MIT'den doktoralı. 93 yaşında hâlâ uzay savunucusu.</div>
+    </div>
+    <div class="astronaut-card reveal">
+      <div class="astronaut-avatar">👨‍🚀</div>
+      <div class="astronaut-name">Pete Conrad</div>
+      <div class="astronaut-role">Apollo 12 • Komutan</div>
+      <div class="astronaut-fact">Ay'a üçüncü adım atan insan. "Bu Neil için küçük olabilir ama benim için büyük!" demişti.</div>
+    </div>
+    <div class="astronaut-card reveal">
+      <div class="astronaut-avatar">👨‍🚀</div>
+      <div class="astronaut-name">Alan Shepard</div>
+      <div class="astronaut-role">Apollo 14 • Komutan</div>
+      <div class="astronaut-fact">Amerika'nın ilk astronotu. Ay'da golf oynayan tek insan!</div>
+    </div>
+    <div class="astronaut-card reveal">
+      <div class="astronaut-avatar">👨‍🚀</div>
+      <div class="astronaut-name">David Scott</div>
+      <div class="astronaut-role">Apollo 15 • Komutan</div>
+      <div class="astronaut-fact">İlk Ay Rover'ını kullanan astronot. Ay'da Galileo'nun düşen tüy deneyini tekrarladı.</div>
+    </div>
+    <div class="astronaut-card reveal">
+      <div class="astronaut-avatar">👨‍🚀</div>
+      <div class="astronaut-name">Eugene Cernan</div>
+      <div class="astronaut-role">Apollo 17 • Komutan</div>
+      <div class="astronaut-fact">Ay'dan ayrılan son insan. Kızının baş harflerini Ay toprağına yazdı.</div>
+    </div>
+    <div class="astronaut-card reveal">
+      <div class="astronaut-avatar">👨‍🚀</div>
+      <div class="astronaut-name">Harrison Schmitt</div>
+      <div class="astronaut-role">Apollo 17 • Bilim İnsanı</div>
+      <div class="astronaut-fact">Ay'a inen tek profesyonel jeolog. Turuncu renkli Ay toprağı keşfetti.</div>
+    </div>
+    <div class="astronaut-card reveal">
+      <div class="astronaut-avatar">👩‍🚀</div>
+      <div class="astronaut-name">Artemis Astronotu</div>
+      <div class="astronaut-role">Artemis III • Gelecek</div>
+      <div class="astronaut-fact">İlk kadın astronot yakında Ay'a adım atacak. Yeni bir çağ başlıyor!</div>
+    </div>
+  </div>
+</section>
+
+<!-- MAP -->
+<section class="section" id="map" style="border-top:1px solid var(--border)">
+  <p class="section-label">// iniş noktaları</p>
+  <h2 class="section-title">Ay Yüzeyi <span>İnteraktif Harita</span></h2>
+  <p style="color:var(--muted);margin-bottom:40px;font-size:0.9rem">Noktaların üzerine gel — Apollo görevlerinin iniş noktalarını keşfet.</p>
+  <div class="map-wrap reveal">
+    <img class="moon-map" src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/FullMoon2010.jpg/800px-FullMoon2010.jpg" alt="Ay Haritası">
+    <div class="landing-dot" style="left:54%;top:44%" data-title="Apollo 11" data-desc="Sakinlik Denizi — 20 Temmuz 1969. İlk insanlı iniş."></div>
+    <div class="dot-label" style="left:56%;top:40%">A11</div>
+    <div class="landing-dot" style="left:37%;top:52%" data-title="Apollo 12" data-desc="Fırtınalar Okyanusu — 19 Kasım 1969. Hassas iniş."></div>
+    <div class="dot-label" style="left:39%;top:48%">A12</div>
+    <div class="landing-dot" style="left:42%;top:57%" data-title="Apollo 14" data-desc="Fra Mauro — 5 Şubat 1971. 42 kg kaya toplandı."></div>
+    <div class="dot-label" style="left:44%;top:53%">A14</div>
+    <div class="landing-dot" style="left:56%;top:35%" data-title="Apollo 15" data-desc="Hadley-Apennine — 30 Temmuz 1971. İlk Rover."></div>
+    <div class="dot-label" style="left:58%;top:31%">A15</div>
+    <div class="landing-dot" style="left:60%;top:51%" data-title="Apollo 16" data-desc="Descartes — 21 Nisan 1972. 95 kg kaya."></div>
+    <div class="dot-label" style="left:62%;top:47%">A16</div>
+    <div class="landing-dot" style="left:63%;top:42%" data-title="Apollo 17" data-desc="Taurus-Littrow — 11 Aralık 1972. Son görev."></div>
+    <div class="dot-label" style="left:65%;top:38%">A17</div>
+    <div class="map-tooltip" id="mapTooltip"><strong id="ttTitle"></strong><span id="ttDesc"></span></div>
+  </div>
+</section>
+
+<!-- TIMELINE -->
+<section class="section" id="timeline" style="border-top:1px solid var(--border)">
+  <p class="section-label">// kronoloji</p>
+  <h2 class="section-title">Uzay <span>Yarışının Zaman Çizelgesi</span></h2>
+  <div class="timeline-wrap">
+    <div class="timeline-line"></div>
+    <div class="timeline-item reveal"><div class="tl-year">1957</div><div class="tl-title">Sputnik 1 — İlk Yapay Uydu</div><div class="tl-desc">Sovyetler Birliği, Dünya'nın ilk yapay uydusunu fırlattı. Uzay çağı başladı.</div></div>
+    <div class="timeline-item reveal"><div class="tl-year">1961</div><div class="tl-title">Yuri Gagarin — İlk İnsan Uzayda</div><div class="tl-desc">Vostok 1 kapsülüyle Dünya'yı yörüngede bir kez dolaştı. 108 dakikalık yolculuk.</div></div>
+    <div class="timeline-item reveal"><div class="tl-year">1961</div><div class="tl-title">Kennedy'nin Ay Bildirisi</div><div class="tl-desc">"Bu on yıl içinde bir insan Ay'a göndereceğiz." Apollo programı başladı.</div></div>
+    <div class="timeline-item reveal"><div class="tl-year">1966</div><div class="tl-title">Luna 9 — İlk Yumuşak İniş</div><div class="tl-desc">Sovyet Luna 9, Ay yüzeyine ilk yumuşak inişi gerçekleştirdi ve ilk fotoğrafları gönderdi.</div></div>
+    <div class="timeline-item reveal"><div class="tl-year">1968</div><div class="tl-title">Apollo 8 — İlk Ay Yörüngesi</div><div class="tl-desc">İnsanlık ilk kez Ay yörüngesine girdi. "Earthrise" fotoğrafı çekildi.</div></div>
+    <div class="timeline-item reveal"><div class="tl-year">1969</div><div class="tl-title">Apollo 11 — "The Eagle has landed"</div><div class="tl-desc">20 Temmuz'da Ay'a ilk insanlı iniş. 600 milyon insan canlı izledi.</div></div>
+    <div class="timeline-item reveal"><div class="tl-year">1972</div><div class="tl-title">Apollo 17 — Son Ay Görevi</div><div class="tl-desc">Eugene Cernan Ay'dan ayrılan son insan oldu. Apollo sona erdi.</div></div>
+    <div class="timeline-item reveal"><div class="tl-year">2022</div><div class="tl-title">Artemis I — Test Uçuşu</div><div class="tl-desc">SLS roketi ve Orion kapsülü insansız olarak Ay yörüngesine gönderildi.</div></div>
+    <div class="timeline-item reveal"><div class="tl-year">2025+</div><div class="tl-title">Artemis III — Yeni Nesil</div><div class="tl-desc">SpaceX Starship ile Ay Güney Kutbu'na iniş. Kalıcı Ay üssü hedefi.</div></div>
+  </div>
+</section>
+
+<!-- MOON FACTS -->
+<section class="section" id="facts" style="border-top:1px solid var(--border)">
+  <p class="section-label">// ay hakkında</p>
+  <h2 class="section-title">İlginç <span>Ay Gerçekleri</span></h2>
+  <div class="facts-grid">
+    <div class="fact-card reveal">
+      <div class="fact-icon">🌡️</div>
+      <div class="fact-title">Aşırı Sıcaklık Farkı</div>
+      <div class="fact-text">Ay'da gündüz 127°C, gece -173°C olur. Tek bir günde 300°C'lik fark yaşanır.</div>
+    </div>
+    <div class="fact-card reveal">
+      <div class="fact-icon">🦶</div>
+      <div class="fact-title">Ayak İzleri Sonsuza Dek</div>
+      <div class="fact-text">Ay'da atmosfer ve rüzgar olmadığı için astronotların ayak izleri milyonlarca yıl kalacak.</div>
+    </div>
+    <div class="fact-card reveal">
+      <div class="fact-icon">⚖️</div>
+      <div class="fact-title">1/6 Yerçekimi</div>
+      <div class="fact-text">Dünya'da 60 kg olan biri Ay'da sadece 10 kg çeker. Astronotlar zıplayarak hareket etti.</div>
+    </div>
+    <div class="fact-card reveal">
+      <div class="fact-icon">📡</div>
+      <div class="fact-title">Mesafe: 384.400 km</div>
+      <div class="fact-text">Dünya-Ay arası ışık hızıyla 1.3 saniye sürer. Apollo ile yolculuk 3 gün sürdü.</div>
+    </div>
+    <div class="fact-card reveal">
+      <div class="fact-icon">🏌️</div>
+      <div class="fact-title">Ay'da Golf</div>
+      <div class="fact-text">Alan Shepard (Apollo 14) Ay'da golf oynadı. Düşük yerçekiminde top kilometrelerce gitti.</div>
+    </div>
+    <div class="fact-card reveal">
+      <div class="fact-icon">💎</div>
+      <div class="fact-title">Ay Toprağı Değeri</div>
+      <div class="fact-text">Dünya'ya getirilen 382 kg Ay toprağının tahmini değeri milyarlarca dolar.</div>
+    </div>
+  </div>
+</section>
+
+<!-- QUIZ -->
+<section class="section" id="quiz" style="border-top:1px solid var(--border)">
+  <p class="section-label">// interaktif test</p>
+  <h2 class="section-title" style="margin-bottom:40px">Bilgini <span>Test Et</span></h2>
+  <div class="quiz-wrap reveal">
+    <div id="quizMain">
+      <div class="quiz-progress" id="quizProgress">SORU 1 / 8</div>
+      <div class="quiz-bar"><div class="quiz-bar-fill" id="quizFill" style="width:12.5%"></div></div>
+      <div class="quiz-question" id="quizQ"></div>
+      <div class="quiz-options" id="quizOpts"></div>
+      <div class="quiz-feedback" id="quizFeedback"></div>
+      <div class="quiz-next"><button class="btn btn-primary" onclick="nextQuestion()">Sonraki Soru →</button></div>
+    </div>
+    <div class="quiz-score" id="quizScore">
+      <div class="score-num" id="scoreNum"></div>
+      <p style="color:var(--muted);margin-top:8px;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:0.1em">DOĞRU CEVAP</p>
+      <p style="margin-top:20px;color:var(--text)" id="scoreMsg"></p>
+      <button class="btn btn-primary" style="margin-top:28px" onclick="restartQuiz()">Tekrar Dene</button>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>© 2025 MoonStep — Astro Hackathon Projesi</p>
+  <p>Görsel: NASA, Wikipedia Commons</p>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ===== LOADING SCREEN =====
+window.addEventListener('load', () => {
+  setTimeout(() => document.getElementById('loader').classList.add('hidden'), 2800);
+});
+
+// ===== STARS =====
+const starsEl = document.getElementById('stars');
+for (let i = 0; i < 200; i++) {
+  const s = document.createElement('div'); s.className = 'star';
+  const sz = Math.random() * 2 + 0.5;
+  s.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*100}%;width:${sz}px;height:${sz}px;--d:${2+Math.random()*4}s;--delay:${Math.random()*4}s;--min-op:${0.1+Math.random()*0.2};--max-op:${0.5+Math.random()*0.5};`;
+  starsEl.appendChild(s);
+}
+
+// ===== 3D MOON =====
+const canvas = document.getElementById('moonCanvas');
+const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+camera.position.z = 2.8;
+const geo = new THREE.SphereGeometry(1, 64, 64);
+const tex = new THREE.TextureLoader().load('https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/FullMoon2010.jpg/1024px-FullMoon2010.jpg');
+const mat = new THREE.MeshPhongMaterial({map:tex, bumpMap:tex, bumpScale:0.015, shininess:5, color:0xaaaaaa});
+const moon = new THREE.Mesh(geo, mat);
+scene.add(moon);
+scene.add(new THREE.AmbientLight(0x222244, 0.4));
+const sun = new THREE.DirectionalLight(0xfff5e0, 1.2);
+sun.position.set(5, 3, 5); scene.add(sun);
+const rim = new THREE.DirectionalLight(0x334466, 0.3);
+rim.position.set(-5, -2, -3); scene.add(rim);
+
+function resize() {
+  const h = window.innerHeight, w = window.innerWidth;
+  renderer.setSize(w, h); camera.aspect = w/h; camera.updateProjectionMatrix();
+}
+resize(); window.addEventListener('resize', resize);
+
+let mx = 0, my = 0;
+document.addEventListener('mousemove', e => {
+  mx = (e.clientX/window.innerWidth - 0.5) * 0.3;
+  my = (e.clientY/window.innerHeight - 0.5) * 0.15;
+});
+
+(function animate() {
+  requestAnimationFrame(animate);
+  moon.rotation.y += 0.0008;
+  moon.rotation.x += (my - moon.rotation.x) * 0.02;
+  moon.rotation.y += (mx - moon.rotation.y) * 0.005;
+  renderer.render(scene, camera);
+})();
+
+// ===== NAV SCROLL EFFECT =====
+window.addEventListener('scroll', () => {
+  document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 60);
+  document.getElementById('scrollTop').classList.toggle('show', window.scrollY > 500);
+});
+
+// ===== HAMBURGER MENU =====
+function toggleMobile() {
+  document.getElementById('hamburger').classList.toggle('active');
+  document.getElementById('mobileMenu').classList.toggle('open');
+  document.body.style.overflow = document.getElementById('mobileMenu').classList.contains('open') ? 'hidden' : '';
+}
+
+// ===== SCROLL REVEAL =====
+const obs = new IntersectionObserver(e => e.forEach(x => { if (x.isIntersecting) x.target.classList.add('visible'); }), {threshold:0.12});
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+// ===== COUNT UP =====
+const cobs = new IntersectionObserver(e => e.forEach(x => { if (x.isIntersecting) { const el=x.target, t=+el.dataset.count; let c=0; const st=t/60; const ti=setInterval(()=>{ c+=st; if(c>=t){el.textContent=t;clearInterval(ti);}else el.textContent=Math.floor(c);},16); cobs.unobserve(el); }}), {threshold:0.5});
+document.querySelectorAll('[data-count]').forEach(el => cobs.observe(el));
+
+// ===== MAP TOOLTIP =====
+const tooltip = document.getElementById('mapTooltip');
+document.querySelectorAll('.landing-dot').forEach(dot => {
+  dot.addEventListener('mouseenter', e => {
+    document.getElementById('ttTitle').textContent = dot.dataset.title;
+    document.getElementById('ttDesc').textContent = dot.dataset.desc;
+    const wr = dot.closest('.map-wrap').getBoundingClientRect();
+    const dr = dot.getBoundingClientRect();
+    let l = dr.left - wr.left + 20, t = dr.top - wr.top - 10;
+    if (l + 240 > wr.width) l = l - 260;
+    tooltip.style.left = l+'px'; tooltip.style.top = t+'px';
+    tooltip.classList.add('show');
+  });
+  dot.addEventListener('mouseleave', () => tooltip.classList.remove('show'));
+});
+
+// ===== AUDIO SYSTEM =====
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+let audioEnabled = false;
+
+document.getElementById('audioToggle').addEventListener('click', () => {
+  audioEnabled = !audioEnabled;
+  document.getElementById('audioToggle').textContent = audioEnabled ? '🔊' : '🔇';
+  document.getElementById('audioToggle').classList.toggle('active', audioEnabled);
+  if (!audioCtx) audioCtx = new AudioCtx();
+});
+
+function playTone(freq, duration, type='sine', vol=0.15) {
+  if (!audioEnabled || !audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type; osc.frequency.value = freq;
+  gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime + duration);
+}
+
+function playCountdownBeep() { playTone(800, 0.15, 'square', 0.08); }
+function playLaunchSound() {
+  if (!audioEnabled || !audioCtx) return;
+  const noise = audioCtx.createBufferSource();
+  const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 3, audioCtx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.3;
+  noise.buffer = buf;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0, audioCtx.currentTime);
+  gain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.5);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 3);
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'lowpass'; filter.frequency.value = 300;
+  noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+  noise.start(); noise.stop(audioCtx.currentTime + 3);
+  playTone(120, 2, 'sawtooth', 0.1);
+}
+function playSuccessSound() { playTone(523,0.2,'sine',0.1); setTimeout(()=>playTone(659,0.2,'sine',0.1),200); setTimeout(()=>playTone(784,0.4,'sine',0.12),400); }
+
+// Click sounds
+document.querySelectorAll('.btn, .quiz-option, .landing-dot, .nav-links a').forEach(el => {
+  el.addEventListener('click', () => playTone(600, 0.08, 'sine', 0.05));
+});
+
+// ===== LAUNCH SIMULATION =====
+function startLaunch() {
+  const overlay = document.getElementById('launchOverlay');
+  overlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  // Launch stars
+  const ls = document.getElementById('launchStars');
+  ls.innerHTML = '';
+  for (let i = 0; i < 100; i++) {
+    const s = document.createElement('div'); s.className = 'launch-star';
+    const sz = Math.random() * 2 + 0.5;
+    s.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*100}%;width:${sz}px;height:${sz}px;opacity:${0.3+Math.random()*0.7}`;
+    ls.appendChild(s);
+  }
+
+  // Reset
+  const cd = document.getElementById('countdownDisplay');
+  const cl = document.getElementById('countdownLabel');
+  const rc = document.getElementById('rocketContainer');
+  const fl = document.getElementById('rocketFlame');
+  const sl = document.getElementById('speedLines');
+  const pt = document.getElementById('phaseText');
+  const ls2 = document.getElementById('landingScene');
+  const lr = document.getElementById('landingRocket');
+  const lsuc = document.getElementById('landingSuccess');
+
+  cd.style.display = 'block';
+  cl.style.display = 'block';
+  rc.style.cssText = 'position:absolute;bottom:-120px;left:50%;transform:translateX(-50%);z-index:3;';
+  fl.classList.remove('active');
+  sl.classList.remove('active');
+  pt.classList.remove('show');
+  ls2.style.display = 'none';
+  lsuc.style.opacity = '0';
+
+  // Phase 1: Countdown
+  let count = 10;
+  cd.textContent = count;
+  cl.textContent = 'FIRLATMAYA HAZIRLIK';
+
+  const countInterval = setInterval(() => {
+    count--;
+    if (count > 0) {
+      cd.textContent = count;
+      playCountdownBeep();
+      if (count <= 3) cd.style.color = '#e05a5a';
+    } else if (count === 0) {
+      cd.textContent = 'FIRLATMA!';
+      cd.style.fontSize = 'clamp(3rem,10vw,7rem)';
+      cd.style.color = '#ff6b35';
+      cl.textContent = 'MOTORLAR TAM GÜÇ';
+      clearInterval(countInterval);
+      phase2();
+    }
+  }, 1000);
+
+  function phase2() {
+    // Ignition
+    fl.classList.add('active');
+    playLaunchSound();
+    rc.style.transition = 'bottom 4s ease-in';
+    rc.style.bottom = '110%';
+
+    setTimeout(() => {
+      cd.style.display = 'none';
+      cl.style.display = 'none';
+      pt.textContent = '— DÜNYA YÖRÜNGESINDEN AYRILIŞ —';
+      pt.classList.add('show');
+      sl.classList.add('active');
+
+      // Speed lines
+      sl.innerHTML = '';
+      for (let i = 0; i < 30; i++) {
+        const line = document.createElement('div'); line.className = 'speed-line';
+        line.style.cssText = `left:${Math.random()*100}%;height:${50+Math.random()*150}px;animation-delay:${Math.random()*0.4}s;animation-duration:${0.2+Math.random()*0.3}s;`;
+        sl.appendChild(line);
+      }
+    }, 2000);
+
+    setTimeout(() => {
+      pt.textContent = '— AY YÖRÜNGESİNE GİRİŞ —';
+      playTone(440, 0.5, 'sine', 0.08);
+    }, 5000);
+
+    setTimeout(() => {
+      pt.textContent = '— İNİŞ PROSEDÜRÜ BAŞLADI —';
+      sl.classList.remove('active');
+    }, 7000);
+
+    setTimeout(() => phase3(), 8500);
+  }
+
+  function phase3() {
+    // Landing scene
+    pt.classList.remove('show');
+    ls2.style.display = 'flex';
+    lr.style.top = '20%';
+
+    setTimeout(() => {
+      lr.style.top = '52%';
+    }, 500);
+
+    setTimeout(() => {
+      lsuc.style.opacity = '1';
+      playSuccessSound();
+    }, 4000);
+  }
+}
+
+function closeLaunch() {
+  document.getElementById('launchOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+// ===== QUIZ =====
+const questions = [
+  {q:"İnsanlığın ilk Ay'a inişi hangi tarihte gerçekleşti?",opts:["16 Temmuz 1969","20 Temmuz 1969","21 Temmuz 1969","4 Ekim 1957"],correct:1,info:"Apollo 11'in Ay modülü Eagle, 20 Temmuz 1969'da Sakinlik Denizi'ne indi."},
+  {q:"Apollo 13 görevi neden Ay'a inemedi?",opts:["Yakıt bitti","Oksijen tankı patladı","Motor arızası","Hava koşulları"],correct:1,info:"13 Nisan 1970'te servis modülündeki oksijen tankı patladı."},
+  {q:"Ay'a ilk kez araç (Rover) hangi görevle götürüldü?",opts:["Apollo 12","Apollo 14","Apollo 15","Apollo 16"],correct:2,info:"Apollo 15, 30 Temmuz 1971'de ilk Ay Rover'ını kullandı."},
+  {q:"Bugüne kadar kaç insan Ay yüzeyine ayak bastı?",opts:["6","8","10","12"],correct:3,info:"Apollo 11-17 arası 6 görevde toplam 12 astronot Ay'a indi."},
+  {q:"NASA'nın yeni nesil insanlı Ay programının adı nedir?",opts:["Apollo 18","Orion","Artemis","Lunar Gateway"],correct:2,info:"Artemis, Yunan mitolojisinde Apollo'nun ikiz kız kardeşidir."},
+  {q:"Ay'da yerçekimi Dünya'nın kaçta kaçıdır?",opts:["1/2","1/4","1/6","1/8"],correct:2,info:"Ay'ın yerçekimi Dünya'nın yaklaşık 1/6'sıdır. 60 kg = ~10 kg."},
+  {q:"Dünya'dan Ay'a uzaklık yaklaşık ne kadardır?",opts:["38.440 km","384.400 km","3.844.000 km","38.440.000 km"],correct:1,info:"Ortalama 384.400 km. Işık hızıyla 1.3 saniye sürer."},
+  {q:"Ay'da hangi astronot golf oynadı?",opts:["Neil Armstrong","Buzz Aldrin","Alan Shepard","John Glenn"],correct:2,info:"Alan Shepard, Apollo 14 görevinde Ay'da golf oynadı!"}
+];
+
+let current = 0, score = 0, answered = false;
+
+function loadQuestion() {
+  const q = questions[current];
+  document.getElementById('quizProgress').textContent = `SORU ${current+1} / ${questions.length}`;
+  document.getElementById('quizFill').style.width = ((current+1)/questions.length*100)+'%';
+  document.getElementById('quizQ').textContent = q.q;
+  document.getElementById('quizFeedback').textContent = '';
+  document.querySelector('.quiz-next').style.display = 'none';
+  answered = false;
+  const opts = document.getElementById('quizOpts');
+  opts.innerHTML = '';
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'quiz-option'; btn.textContent = opt;
+    btn.onclick = () => answer(i);
+    opts.appendChild(btn);
+  });
+}
+
+function answer(idx) {
+  if (answered) return; answered = true;
+  const q = questions[current];
+  const btns = document.querySelectorAll('.quiz-option');
+  btns[q.correct].classList.add('correct');
+  if (idx !== q.correct) { btns[idx].classList.add('wrong'); playTone(200, 0.3, 'sawtooth', 0.06); }
+  else { score++; playTone(523, 0.2, 'sine', 0.08); setTimeout(()=>playTone(659,0.2,'sine',0.08), 150); }
+  document.getElementById('quizFeedback').textContent = q.info;
+  document.querySelector('.quiz-next').style.display = 'block';
+}
+
+function nextQuestion() {
+  current++;
+  if (current >= questions.length) showScore(); else loadQuestion();
+}
+
+function showScore() {
+  document.getElementById('quizMain').style.display = 'none';
+  document.getElementById('quizScore').style.display = 'block';
+  document.getElementById('scoreNum').textContent = `${score}/${questions.length}`;
+  playSuccessSound();
+  const msgs = [
+    "Uzay hakkında öğrenmeye devam et! 🌱",
+    "İyi başlangıç, daha çok keşfet! ⭐",
+    "Fena değil! Potansiyelin var! 🌟",
+    "Güzel! Uzay bilgin iyi! 🔭",
+    "Harika! Gerçek bir uzay meraklısı! 🚀",
+    "Mükemmel! Neredeyse tam puan! 🌕",
+    "İnanılmaz! Uzay uzmanısın! ✨",
+    "Efsane! NASA seni bekliyor! 👨‍🚀",
+    "TAM PUAN! Bir dahisin! 🏆"
+  ];
+  document.getElementById('scoreMsg').textContent = msgs[Math.min(score, 8)];
+}
+
+function restartQuiz() {
+  current = 0; score = 0;
+  document.getElementById('quizMain').style.display = 'block';
+  document.getElementById('quizScore').style.display = 'none';
+  loadQuestion();
+}
+
+loadQuestion();
+</script>
+</body>
+</html>

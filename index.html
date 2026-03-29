@@ -1,1 +1,1511 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MoonStep — İnsanlığın Ay Yolculuğu | Astro Hackathon 2025</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--bg:#050a14;--surface:#0d1625;--surface2:#111e30;--accent:#c8a96e;--accent2:#4a9eff;--text:#e8e4d8;--muted:#6b7a8d;--border:rgba(200,169,110,0.15);--glow:rgba(200,169,110,0.08)}
+    html{scroll-behavior:smooth}
+    body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;overflow-x:hidden;cursor:none}
 
+    /* CURSOR */
+    .cursor{position:fixed;width:20px;height:20px;border:1.5px solid var(--accent);border-radius:50%;pointer-events:none;z-index:9998;transition:width .2s,height .2s,border-color .2s;transform:translate(-50%,-50%)}
+    .cursor-dot{position:fixed;width:4px;height:4px;background:var(--accent);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%)}
+    .cursor.hover{width:44px;height:44px;border-color:var(--accent2);background:rgba(74,158,255,.05)}
+    .mouse-particle{position:fixed;pointer-events:none;z-index:1;border-radius:50%;background:var(--accent);opacity:.6;transition:opacity .5s,transform .5s}
+
+    /* ===== LOADER (ENHANCED) ===== */
+    .loader-screen{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s,visibility .8s}
+    .loader-screen.hidden{opacity:0;visibility:hidden;pointer-events:none}
+    .loader-screen.launching .loader-rocket-wrap{animation:rocketLaunch 1s ease-in forwards}
+    @keyframes rocketLaunch{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-120vh);opacity:0}}
+    .loader-screen.launching .loader-stars-warp{animation:starsWarp 1s ease-in forwards}
+    @keyframes starsWarp{0%{opacity:0}30%{opacity:1}100%{opacity:0}}
+    .loader-stars-warp{position:absolute;inset:0;opacity:0;overflow:hidden;pointer-events:none}
+    .loader-stars-warp span{position:absolute;width:2px;background:linear-gradient(to bottom,transparent,#fff);animation:warpLine 0.5s linear infinite}
+    @keyframes warpLine{0%{height:0;top:50%}100%{height:60vh;top:-30vh}}
+
+    .loader-rocket-wrap{position:relative;width:200px;height:200px;margin-bottom:20px}
+    .loader-orbit-container{position:absolute;inset:0}
+    .loader-moon-main{width:100px;height:100px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#e8e4d8,#999 50%,#555 80%,#333);box-shadow:0 0 60px rgba(200,169,110,.3),inset -10px -5px 20px rgba(0,0,0,.5);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);animation:lPulse 1.5s ease-in-out infinite}
+    .loader-moon-main .crater{position:absolute;border-radius:50%;background:rgba(0,0,0,.08)}
+    .loader-moon-main .crater:nth-child(1){width:18px;height:18px;top:15px;left:12px}
+    .loader-moon-main .crater:nth-child(2){width:12px;height:12px;top:50px;left:55px}
+    .loader-moon-main .crater:nth-child(3){width:8px;height:8px;top:30px;left:65px}
+    .loader-moon-main .crater:nth-child(4){width:22px;height:22px;top:55px;left:20px;background:rgba(0,0,0,.05)}
+    .loader-moon-main .crater:nth-child(5){width:6px;height:6px;top:20px;left:45px}
+    @keyframes lPulse{0%,100%{transform:translate(-50%,-50%) scale(1);box-shadow:0 0 60px rgba(200,169,110,.3)}50%{transform:translate(-50%,-50%) scale(1.06);box-shadow:0 0 100px rgba(200,169,110,.6)}}
+    .loader-satellite{position:absolute;width:10px;height:10px;top:50%;left:50%;animation:orbit 2s linear infinite}
+    .loader-satellite::after{content:'🛰️';font-size:16px;position:absolute;transform:translate(-50%,-50%)}
+    .loader-satellite2{position:absolute;width:10px;height:10px;top:50%;left:50%;animation:orbit2 3s linear infinite}
+    .loader-satellite2::after{content:'🌟';font-size:10px;position:absolute;transform:translate(-50%,-50%)}
+    .loader-satellite3{position:absolute;width:10px;height:10px;top:50%;left:50%;animation:orbit3 2.5s linear infinite reverse}
+    .loader-satellite3::after{content:'🚀';font-size:12px;position:absolute;transform:translate(-50%,-50%)}
+    @keyframes orbit{from{transform:rotate(0deg) translateX(80px) rotate(0deg)}to{transform:rotate(360deg) translateX(80px) rotate(-360deg)}}
+    @keyframes orbit2{from{transform:rotate(180deg) translateX(60px) rotate(-180deg)}to{transform:rotate(540deg) translateX(60px) rotate(-540deg)}}
+    @keyframes orbit3{from{transform:rotate(90deg) translateX(95px) rotate(-90deg)}to{transform:rotate(450deg) translateX(95px) rotate(-450deg)}}
+    .loader-ring{position:absolute;border-radius:50%;border:1px solid rgba(200,169,110,.08);animation:ringPulse 2s ease-in-out infinite}
+    .loader-ring:nth-child(1){inset:10px;border-color:rgba(200,169,110,.1)}
+    .loader-ring:nth-child(2){inset:-5px;animation-delay:.5s;border-color:rgba(74,158,255,.08)}
+    .loader-ring:nth-child(3){inset:-20px;animation-delay:1s;border-color:rgba(200,169,110,.05)}
+    .loader-ring:nth-child(4){inset:-35px;animation-delay:1.5s;border-color:rgba(74,158,255,.04)}
+    @keyframes ringPulse{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.03)}}
+    .loader-brand{margin-top:12px;font-family:'Space Mono',monospace;font-size:22px;letter-spacing:.4em;color:var(--accent);text-transform:uppercase}
+    .loader-brand span{color:var(--muted)}
+    .loader-phase{font-family:'Space Mono',monospace;font-size:11px;color:var(--accent2);margin-top:6px;letter-spacing:.15em;min-height:18px;transition:opacity .3s}
+    .loader-hackathon{font-family:'Space Mono',monospace;font-size:9px;color:var(--accent2);margin-top:14px;letter-spacing:.2em;text-transform:uppercase;padding:6px 18px;border:1px solid rgba(74,158,255,.3);border-radius:20px}
+    .loader-bar{width:280px;height:4px;background:var(--border);margin-top:22px;overflow:hidden;border-radius:4px;position:relative}
+    .loader-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2),#e05aaa);background-size:200% 100%;animation:barShimmer 2s linear infinite;transition:width .3s}
+    @keyframes barShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    .loader-percent{font-family:'Space Mono',monospace;font-size:13px;color:var(--accent);margin-top:8px;letter-spacing:.15em}
+    .loader-countdown{font-family:'Space Mono',monospace;font-size:48px;color:var(--accent);opacity:0;position:absolute;animation:none}
+    .loader-countdown.active{animation:countPop .8s ease forwards}
+    @keyframes countPop{0%{opacity:0;transform:scale(2)}30%{opacity:1;transform:scale(1)}80%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.5)}}
+    .loader-tip{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);margin-top:18px;letter-spacing:.1em;max-width:340px;text-align:center;line-height:1.6;transition:opacity .4s}
+
+    /* ASTRO POPUP */
+    .astro-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.9);z-index:500;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:40px;max-width:440px;width:90%;text-align:center;display:none;opacity:0;transition:all .3s;backdrop-filter:blur(20px)}
+    .astro-popup.active{display:block;opacity:1;transform:translate(-50%,-50%) scale(1)}
+    .astro-popup::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:12px 12px 0 0}
+    .astro-popup-overlay{position:fixed;inset:0;z-index:499;background:rgba(0,0,0,.7);display:none;backdrop-filter:blur(5px)}
+    .astro-popup-overlay.active{display:block}
+    .astro-popup h3{font-size:1.3rem;color:var(--accent);margin-bottom:12px}
+    .astro-popup p{font-size:.9rem;color:var(--muted);line-height:1.7;margin-bottom:20px}
+    .astro-popup .ap-emoji{font-size:3rem;margin-bottom:16px}
+    .astro-popup .ap-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+    /* TOAST / NOTIFICATIONS */
+    .toast-container{position:fixed;bottom:80px;right:24px;z-index:400;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+    .toast{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 20px;font-size:.8rem;color:var(--text);max-width:340px;animation:toastIn .4s ease forwards;pointer-events:all;backdrop-filter:blur(15px);box-shadow:0 10px 40px rgba(0,0,0,.4)}
+    .toast::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:8px 8px 0 0}
+    .toast.out{animation:toastOut .4s ease forwards}
+    @keyframes toastIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes toastOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(40px)}}
+    .toast-title{font-family:'Space Mono',monospace;font-size:9px;color:var(--accent);letter-spacing:.15em;text-transform:uppercase;margin-bottom:4px}
+
+    /* STARS / BACKGROUND */
+    .stars-layer{position:fixed;inset:0;pointer-events:none;z-index:0}
+    .stars-layer.layer-1{z-index:0}
+    .stars-layer.layer-2{z-index:0}
+    .stars-layer.layer-3{z-index:0}
+    .star{position:absolute;background:#fff;border-radius:50%;animation:twinkle var(--d,3s) ease-in-out infinite;animation-delay:var(--dl,0s)}
+    @keyframes twinkle{0%,100%{opacity:var(--mo,.2)}50%{opacity:var(--xo,.8)}}
+    .fp{position:fixed;pointer-events:none;z-index:0;border-radius:50%;background:var(--accent);opacity:.1;animation:fUp var(--dur,15s) linear infinite;animation-delay:var(--del,0s)}
+    @keyframes fUp{0%{transform:translateY(100vh) translateX(0);opacity:0}10%{opacity:.1}90%{opacity:.1}100%{transform:translateY(-10vh) translateX(var(--drift,50px));opacity:0}}
+    .nebula{position:fixed;pointer-events:none;z-index:0;border-radius:50%;filter:blur(80px)}
+    .shooting-star{position:fixed;pointer-events:none;z-index:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.7),transparent);transform:rotate(-45deg);animation:shoot var(--sd,8s) linear infinite;animation-delay:var(--sdd,0s);opacity:0}
+    @keyframes shoot{0%{transform:translateX(-100px) translateY(-100px) rotate(-45deg);opacity:0}5%{opacity:.8}10%{opacity:0}100%{transform:translateX(100vw) translateY(100vh) rotate(-45deg);opacity:0}}
+    .bg-constellation{position:fixed;pointer-events:none;z-index:0;opacity:.03}
+    .bg-planet{position:fixed;pointer-events:none;z-index:0;border-radius:50%;opacity:.04}
+
+    /* GAME */
+    .game-overlay{position:fixed;inset:0;z-index:200;background:#000;display:none;overflow:hidden;cursor:none}
+    .game-overlay.active{display:block}
+    #gameCanvas{width:100%;height:100%;display:block}
+    .game-ui{position:absolute;top:0;left:0;right:0;padding:16px 30px;display:flex;justify-content:space-between;align-items:flex-start;z-index:5;pointer-events:none}
+    .game-ui-left{display:flex;flex-direction:column;gap:4px}
+    .game-score{font-family:'Space Mono',monospace;font-size:18px;color:var(--accent);letter-spacing:.15em;text-shadow:0 0 20px rgba(200,169,110,.3)}
+    .game-score.pop{animation:scorePop .3s ease}
+    @keyframes scorePop{0%{transform:scale(1)}50%{transform:scale(1.3);color:#fff}100%{transform:scale(1)}}
+    .game-level{font-family:'Space Mono',monospace;font-size:11px;color:var(--accent2);letter-spacing:.15em}
+    .game-combo{font-family:'Space Mono',monospace;font-size:10px;color:#e05aaa;letter-spacing:.1em;opacity:0;transition:opacity .3s}
+    .game-combo.show{opacity:1}
+    /* HEALTH BAR - TOP CENTER */
+    .game-health-wrap{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:6;pointer-events:none;text-align:center}
+    .game-health-label{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-bottom:4px}
+    .game-health-bar{width:240px;height:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;overflow:hidden;position:relative}
+    .game-health-fill{height:100%;background:linear-gradient(90deg,#e05a5a,#f0a030,#4a9eff);border-radius:10px;transition:width .4s ease;position:relative}
+    .game-health-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(255,255,255,.2),transparent);border-radius:10px}
+    .game-health-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:9px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5);letter-spacing:.1em}
+    .game-health-bar.damage{animation:healthShake .3s ease}
+    @keyframes healthShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
+    .game-shield-indicator{font-family:'Space Mono',monospace;font-size:9px;color:#4a9eff;margin-top:4px;opacity:0;transition:opacity .3s}
+    .game-shield-indicator.show{opacity:1}
+    .game-start-screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;background:rgba(0,0,0,.88);backdrop-filter:blur(10px)}
+    .game-title{font-size:clamp(2rem,6vw,4rem);font-weight:800;color:var(--accent);margin-bottom:8px;text-shadow:0 0 60px rgba(200,169,110,.3)}
+    .game-subtitle{font-family:'Space Mono',monospace;font-size:12px;color:var(--accent2);letter-spacing:.25em;margin-bottom:28px}
+    .game-instructions{font-size:.9rem;color:var(--muted);line-height:1.8;text-align:center;max-width:440px;margin-bottom:20px}
+    .game-instructions strong{color:var(--text)}
+    .game-keys{display:flex;gap:12px;margin-bottom:36px;flex-wrap:wrap;justify-content:center}
+    .game-key{background:var(--surface);border:1px solid var(--border);padding:10px 18px;border-radius:4px;font-family:'Space Mono',monospace;font-size:12px;color:var(--accent);letter-spacing:.1em}
+    .close-game{position:absolute;top:16px;right:20px;z-index:20;background:none;border:1px solid var(--border);color:var(--muted);font-family:'Space Mono',monospace;font-size:11px;padding:8px 18px;cursor:none;letter-spacing:.1em;transition:all .2s;border-radius:3px;pointer-events:all}
+    .close-game:hover{border-color:var(--accent);color:var(--accent)}
+    .game-message{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:15;text-align:center;max-width:520px;width:90%;padding:36px;background:var(--surface);border:1px solid var(--border);border-radius:8px;display:none;max-height:90vh;overflow-y:auto;backdrop-filter:blur(20px)}
+    .game-message.show{display:block}
+    .game-message::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:8px 8px 0 0}
+    .game-message h2{font-size:1.5rem;color:var(--accent);margin-bottom:12px}
+    .game-message .gm-score{font-family:'Space Mono',monospace;font-size:3.5rem;color:var(--accent);font-weight:700;margin-bottom:6px}
+    .game-message .gm-label{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:.15em;margin-bottom:20px}
+    .game-message .gm-awareness{font-size:.85rem;color:var(--text);line-height:1.8;margin-bottom:14px;padding:18px;background:rgba(200,169,110,.03);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;text-align:left}
+    .game-message .gm-fact{font-family:'Space Mono',monospace;font-size:9px;color:var(--accent2);letter-spacing:.1em;margin-bottom:20px;text-align:left;padding:10px;background:rgba(74,158,255,.03);border-radius:4px}
+    .game-message .gm-stats{display:flex;gap:12px;justify-content:center;margin-bottom:16px;flex-wrap:wrap}
+    .game-message .gm-stat{background:var(--bg);border:1px solid var(--border);padding:10px 16px;border-radius:6px;text-align:center;min-width:80px}
+    .game-message .gm-stat strong{display:block;font-family:'Space Mono',monospace;font-size:1.1rem;color:var(--accent)}
+    .game-message .gm-stat span{font-family:'Space Mono',monospace;font-size:7px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+    .game-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+
+    /* NAV */
+    nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 40px;display:flex;justify-content:space-between;align-items:center;background:linear-gradient(to bottom,rgba(5,10,20,.98),transparent);transition:all .3s}
+    nav.scrolled{background:rgba(5,10,20,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+    .logo{font-family:'Space Mono',monospace;font-size:14px;letter-spacing:.2em;color:var(--accent);text-transform:uppercase;cursor:none;display:flex;align-items:center;gap:8px}
+    .logo span{color:var(--muted)}
+    .logo-badge{font-size:7px;color:var(--accent2);border:1px solid rgba(74,158,255,.3);padding:2px 6px;border-radius:10px;letter-spacing:.1em;cursor:none;transition:all .3s;text-decoration:none}
+    .logo-badge:hover{background:rgba(74,158,255,.1);border-color:var(--accent2);transform:scale(1.05)}
+    .nav-links{display:flex;gap:24px;list-style:none}
+    .nav-links a{color:var(--muted);text-decoration:none;font-size:10px;letter-spacing:.1em;text-transform:uppercase;transition:color .3s;font-family:'Space Mono',monospace;position:relative;cursor:none}
+    .nav-links a:hover{color:var(--accent)}
+    .nav-links a::after{content:'';position:absolute;bottom:-4px;left:0;width:0;height:1px;background:var(--accent);transition:width .3s}
+    .nav-links a:hover::after{width:100%}
+    .hamburger{display:none;flex-direction:column;gap:5px;cursor:none;z-index:101;padding:4px}
+    .hamburger span{width:24px;height:1.5px;background:var(--accent);transition:all .3s;display:block}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg) translate(4px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(4px,-5px)}
+    .mobile-menu{display:none;position:fixed;inset:0;z-index:99;background:rgba(5,10,20,.98);backdrop-filter:blur(30px);flex-direction:column;align-items:center;justify-content:center;gap:28px}
+    .mobile-menu.open{display:flex}
+    .mobile-menu a{color:var(--text);text-decoration:none;font-size:1.2rem;font-weight:700;letter-spacing:.1em;transition:color .2s;cursor:none}
+    .mobile-menu a:hover{color:var(--accent)}
+
+    /* HERO */
+    .hero{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;z-index:1;overflow:hidden}
+    #moonCanvas{position:absolute;inset:0;z-index:0}
+    .hero-content{position:relative;z-index:2;text-align:center;padding:120px 40px 80px;max-width:820px}
+    .hero-tag{display:inline-flex;align-items:center;gap:8px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--accent);text-transform:uppercase;border:1px solid var(--border);padding:8px 20px;border-radius:30px;margin-bottom:36px;animation:fadeUp 1s ease both;background:rgba(200,169,110,.05)}
+    .hero h1{font-size:clamp(2.8rem,8vw,6.5rem);font-weight:800;line-height:.92;letter-spacing:-.02em;margin-bottom:20px;animation:fadeUp 1s .2s ease both}
+    .hero h1 em{font-style:normal;color:var(--accent);display:block;text-shadow:0 0 80px rgba(200,169,110,.2)}
+    .hero-typed{font-family:'Space Mono',monospace;font-size:clamp(.75rem,1.8vw,.95rem);color:var(--accent2);letter-spacing:.1em;min-height:22px;margin-bottom:16px;animation:fadeUp 1s .3s ease both}
+    .typed-cursor{animation:blink .8s infinite}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+    .hero p{font-size:1.05rem;color:var(--muted);line-height:1.8;max-width:520px;margin:0 auto 40px;animation:fadeUp 1s .4s ease both}
+    .hero-cta{display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center;animation:fadeUp 1s .6s ease both}
+    .hero-scroll{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);z-index:2;animation:fadeUp 1s .8s ease both}
+    .scroll-ind{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--muted);font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.2em;text-transform:uppercase}
+    .scroll-ind::after{content:'';width:1px;height:40px;background:linear-gradient(to bottom,var(--accent),transparent);animation:sPulse 2s ease-in-out infinite}
+    @keyframes sPulse{0%,100%{opacity:.3;height:40px}50%{opacity:1;height:55px}}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+
+    /* BUTTONS */
+    .btn{padding:12px 26px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;border-radius:3px;transition:all .3s;cursor:none;border:none;display:inline-flex;align-items:center;gap:8px}
+    .btn-primary{background:var(--accent);color:var(--bg);font-weight:700}
+    .btn-primary:hover{background:#e0c07e;transform:translateY(-2px);box-shadow:0 12px 40px rgba(200,169,110,.3)}
+    .btn-secondary{border:1px solid var(--border);color:var(--text);background:transparent}
+    .btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
+    .btn-game{background:linear-gradient(135deg,#ff6b35,#e05a5a);color:#fff;font-weight:700;animation:gameGlow 2s ease-in-out infinite}
+    .btn-game:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(224,90,90,.4)}
+    @keyframes gameGlow{0%,100%{box-shadow:0 0 20px rgba(224,90,90,.2)}50%{box-shadow:0 0 40px rgba(224,90,90,.5)}}
+    .btn-team{background:linear-gradient(135deg,#4a9eff,#6c63ff);color:#fff;font-weight:700}
+    .btn-team:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(74,158,255,.3)}
+
+    /* MODALS */
+    .detail-modal{position:fixed;inset:0;z-index:300;background:rgba(5,10,20,.95);backdrop-filter:blur(30px);display:none;align-items:center;justify-content:center;padding:40px;opacity:0;transition:opacity .4s}
+    .detail-modal.active{display:flex;opacity:1}
+    .detail-modal-content{background:var(--surface);border:1px solid var(--border);border-radius:8px;max-width:750px;width:100%;max-height:88vh;overflow-y:auto;position:relative;animation:modalIn .4s ease}
+    @keyframes modalIn{from{transform:translateY(30px) scale(.95);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+    .detail-modal-content::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+    .modal-close{position:absolute;top:16px;right:16px;background:none;border:1px solid var(--border);color:var(--muted);width:36px;height:36px;border-radius:50%;font-size:16px;cursor:none;transition:all .2s;display:flex;align-items:center;justify-content:center;z-index:2}
+    .modal-close:hover{border-color:var(--accent);color:var(--accent)}
+    .modal-header{padding:36px 36px 0;display:flex;gap:20px;align-items:flex-start}
+    .modal-avatar{width:70px;height:70px;border-radius:50%;background:linear-gradient(135deg,var(--surface2),var(--bg));border:3px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0}
+    .modal-header-info h2{font-size:1.4rem;font-weight:800;margin-bottom:4px}
+    .mh-role{font-family:'Space Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:.15em;text-transform:uppercase}
+    .mh-dates{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);margin-top:4px}
+    .modal-body{padding:24px 36px 36px}
+    .modal-quote{font-style:italic;font-size:.95rem;color:var(--accent);line-height:1.6;padding:16px;border-left:3px solid var(--accent);margin-bottom:18px;background:rgba(200,169,110,.03);border-radius:0 6px 6px 0}
+    .modal-text{font-size:.85rem;color:var(--muted);line-height:1.8;margin-bottom:18px}
+    .modal-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+    .modal-stat{background:var(--bg);border:1px solid var(--border);padding:12px;border-radius:6px;text-align:center}
+    .modal-stat-val{font-family:'Space Mono',monospace;font-size:1rem;font-weight:700;color:var(--accent);display:block}
+    .modal-stat-lbl{font-family:'Space Mono',monospace;font-size:7px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-top:3px}
+    .modal-facts{display:flex;flex-direction:column;gap:8px}
+    .modal-fact{display:flex;gap:8px;align-items:flex-start;font-size:.8rem;color:var(--muted);line-height:1.5}
+    .modal-fact::before{content:'🌕';font-size:.65rem;flex-shrink:0;margin-top:2px}
+    .modal-crew{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+    .modal-crew-member{background:var(--bg);border:1px solid var(--border);padding:10px 14px;border-radius:4px;text-align:center;flex:1;min-width:90px}
+    .modal-crew-member strong{display:block;font-size:.78rem;color:var(--text);margin-bottom:2px}
+    .modal-crew-member span{font-family:'Space Mono',monospace;font-size:7px;color:var(--accent);letter-spacing:.1em}
+
+    /* COMMON */
+    .sdiv{position:relative;z-index:1;height:80px;display:flex;align-items:center;justify-content:center}
+    .sdiv::before{content:'';width:300px;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent)}
+    .sdiv .di{position:absolute;font-size:18px;background:var(--bg);padding:0 20px}
+    .stats-bar{position:relative;z-index:1;display:flex;justify-content:center;border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex-wrap:wrap;background:linear-gradient(135deg,rgba(200,169,110,.03),transparent)}
+    .stat{flex:1;min-width:140px;max-width:240px;padding:36px 20px;text-align:center;border-right:1px solid var(--border);transition:all .3s}
+    .stat:last-child{border-right:none}
+    .stat:hover{background:rgba(200,169,110,.04)}
+    .stat-icon{font-size:1.4rem;margin-bottom:8px;display:block}
+    .stat-number{font-size:2.2rem;font-weight:800;color:var(--accent);font-family:'Space Mono',monospace;display:block}
+    .stat-label{font-size:9px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;margin-top:4px;font-family:'Space Mono',monospace}
+    .section{position:relative;z-index:1;padding:100px 40px;max-width:1200px;margin:0 auto}
+    .section-label{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.25em;color:var(--accent);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:12px}
+    .section-label::before{content:'';width:30px;height:1px;background:var(--accent)}
+    .section-title{font-size:clamp(2rem,4vw,3rem);font-weight:800;line-height:1.1;margin-bottom:16px;max-width:600px}
+    .section-title span{color:var(--accent)}
+    .section-desc{font-size:.9rem;color:var(--muted);line-height:1.7;max-width:520px;margin-bottom:50px}
+    .section-center{text-align:center}
+    .section-center .section-label{justify-content:center}
+    .section-center .section-label::before{display:none}
+    .section-center .section-title{margin-left:auto;margin-right:auto;max-width:700px}
+    .section-center .section-desc{margin-left:auto;margin-right:auto}
+
+    /* AWARENESS */
+    .awareness-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
+    .awareness-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:30px;text-align:center;transition:all .3s;cursor:none;position:relative;overflow:hidden}
+    .awareness-card:hover{border-color:rgba(200,169,110,.3);transform:translateY(-6px);box-shadow:0 20px 50px rgba(0,0,0,.4)}
+    .awareness-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));transform:scaleX(0);transition:transform .3s}
+    .awareness-card:hover::before{transform:scaleX(1)}
+    .awareness-card::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(200,169,110,.03),transparent);opacity:0;transition:opacity .3s}
+    .awareness-card:hover::after{opacity:1}
+    .aw-icon{font-size:2.8rem;margin-bottom:14px;position:relative;z-index:1}
+    .aw-num{font-family:'Space Mono',monospace;font-size:2.2rem;font-weight:700;color:var(--accent);margin-bottom:6px;position:relative;z-index:1}
+    .aw-label{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;margin-bottom:10px;position:relative;z-index:1}
+    .aw-text{font-size:.8rem;color:var(--muted);line-height:1.6;position:relative;z-index:1}
+
+    /* LIVE DISTANCE */
+    .live-distance{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:40px;text-align:center;max-width:600px;margin:0 auto;position:relative;overflow:hidden}
+    .live-distance::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+    .live-distance::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 30%,rgba(200,169,110,.04),transparent);pointer-events:none}
+    .ld-label{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-bottom:8px}
+    .ld-value{font-family:'Space Mono',monospace;font-size:clamp(1.8rem,4vw,3rem);font-weight:700;color:var(--accent);margin-bottom:8px;position:relative;z-index:1}
+    .ld-sub{font-size:.8rem;color:var(--muted)}
+    .ld-pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:#4a9eff;margin-right:6px;animation:ldPulse 1s ease-in-out infinite}
+    @keyframes ldPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+    .ld-bar{width:100%;height:4px;background:var(--border);border-radius:4px;margin-top:16px;overflow:hidden}
+    .ld-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:4px;transition:width .5s}
+
+    /* ABOUT */
+    .about-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start}
+    .about-text{font-size:.9rem;color:var(--muted);line-height:1.8}
+    .about-text p{margin-bottom:18px}.about-text strong{color:var(--text)}
+    .about-highlight{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:28px;position:relative;overflow:hidden}
+    .about-highlight::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+    .about-highlight h3{font-size:1rem;margin-bottom:14px;color:var(--accent)}
+    .about-values{display:flex;flex-direction:column;gap:16px}
+    .about-value{display:flex;gap:12px;align-items:flex-start}
+    .about-value-icon{font-size:1.2rem;flex-shrink:0;width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:rgba(200,169,110,.05);border:1px solid var(--border);border-radius:8px}
+    .about-value h4{font-size:.82rem;font-weight:700;margin-bottom:2px}.about-value p{font-size:.75rem;color:var(--muted);line-height:1.5}
+    .team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:24px}
+    .team-member{background:var(--surface);border:1px solid var(--border);padding:16px;text-align:center;border-radius:6px;transition:all .3s;cursor:none}
+    .team-member:hover{border-color:var(--accent);transform:translateY(-3px)}
+    .tm-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--surface2),var(--bg));border:2px solid var(--border);margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:16px;transition:border-color .3s}
+    .team-member:hover .tm-avatar{border-color:var(--accent)}
+    .tm-name{font-size:.72rem;font-weight:700;margin-bottom:2px}.tm-role{font-family:'Space Mono',monospace;font-size:7px;color:var(--accent);letter-spacing:.1em}
+    .team-link-wrap{margin-top:24px;text-align:center}
+
+    /* MISSIONS, ASTRONAUTS, etc - same styles */
+    .missions-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+    .mission-card{background:var(--surface);border:1px solid var(--border);overflow:hidden;position:relative;transition:all .4s;border-radius:8px;cursor:none}
+    .mission-card:hover{transform:translateY(-5px);box-shadow:0 20px 50px rgba(0,0,0,.5);border-color:rgba(200,169,110,.3)}
+    .mission-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));transform:scaleX(0);transform-origin:left;transition:transform .4s;z-index:1}
+    .mission-card:hover::before{transform:scaleX(1)}
+    .mv{width:100%;height:160px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+    .mv-1{background:linear-gradient(135deg,#0a1628,#162040,#1a2a50)}.mv-2{background:linear-gradient(135deg,#0d1625,#152a3a,#1a3045)}.mv-3{background:linear-gradient(135deg,#1a0a0a,#2a1520,#301525)}.mv-4{background:linear-gradient(135deg,#0a1a10,#152a20,#1a3028)}.mv-5{background:linear-gradient(135deg,#1a1a0a,#2a2a18,#303020)}.mv-6{background:linear-gradient(135deg,#0a0a1a,#151530,#1a1a40)}
+    .mv::after{content:attr(data-m);position:absolute;bottom:6px;right:10px;font-family:'Space Mono',monospace;font-size:2rem;font-weight:700;color:rgba(255,255,255,.04)}
+    .m-badge{position:absolute;top:8px;left:8px;font-family:'Space Mono',monospace;font-size:7px;color:var(--accent);background:rgba(5,10,20,.85);padding:3px 8px;border-radius:3px;letter-spacing:.15em;border:1px solid var(--border);z-index:1}
+    .m-detail-btn{position:absolute;bottom:8px;right:8px;font-family:'Space Mono',monospace;font-size:7px;color:var(--accent2);background:rgba(5,10,20,.85);padding:3px 8px;border-radius:3px;letter-spacing:.1em;border:1px solid rgba(74,158,255,.3);z-index:1;cursor:none;transition:all .3s}
+    .m-detail-btn:hover{background:rgba(74,158,255,.1)}
+    .m-body{padding:18px}
+    .m-year{font-family:'Space Mono',monospace;font-size:9px;color:var(--accent);letter-spacing:.2em;margin-bottom:4px}
+    .m-name{font-size:1.2rem;font-weight:800;margin-bottom:3px}
+    .m-sub{font-size:.72rem;color:var(--accent);letter-spacing:.1em;margin-bottom:8px;font-family:'Space Mono',monospace}
+    .m-desc{font-size:.78rem;color:var(--muted);line-height:1.65;margin-bottom:12px}
+    .m-stats{display:flex;gap:12px;margin-bottom:10px;padding:8px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+    .ms{text-align:center;flex:1}.ms-v{font-family:'Space Mono',monospace;font-size:.85rem;font-weight:700;color:var(--accent);display:block}.ms-l{font-family:'Space Mono',monospace;font-size:6px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+    .tags{display:flex;flex-wrap:wrap;gap:5px}
+    .tag{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border:1px solid var(--border);color:var(--muted);border-radius:2px}
+    .tag.s{border-color:rgba(74,158,255,.3);color:var(--accent2)}.tag.m{border-color:rgba(200,169,110,.3);color:var(--accent)}.tag.d{border-color:rgba(224,90,90,.3);color:#e05a5a}
+    .astro-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+    .astro-card{background:var(--surface);border:1px solid var(--border);padding:24px 16px;text-align:center;border-radius:8px;transition:all .4s;position:relative;overflow:hidden;cursor:none}
+    .astro-card:hover{transform:translateY(-4px);border-color:rgba(200,169,110,.3);box-shadow:0 14px 36px rgba(0,0,0,.3)}
+    .astro-card::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));transform:scaleX(0);transition:transform .3s}
+    .astro-card:hover::after{transform:scaleX(1)}
+    .ac-avatar{width:56px;height:56px;border-radius:50%;margin:0 auto 12px;background:linear-gradient(135deg,var(--surface2),var(--bg));border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;transition:all .3s}
+    .astro-card:hover .ac-avatar{border-color:var(--accent);transform:scale(1.1)}
+    .ac-name{font-size:.85rem;font-weight:700;margin-bottom:3px}.ac-role{font-family:'Space Mono',monospace;font-size:8px;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px}.ac-fact{font-size:.72rem;color:var(--muted);line-height:1.5;margin-bottom:12px}
+    .ac-btn{font-family:'Space Mono',monospace;font-size:8px;color:var(--accent2);letter-spacing:.1em;text-transform:uppercase;padding:5px 12px;border:1px solid rgba(74,158,255,.3);border-radius:3px;background:transparent;cursor:none;transition:all .3s}
+    .ac-btn:hover{background:rgba(74,158,255,.08);border-color:var(--accent2)}
+
+    /* MOON MAP */
+    .map-c{display:flex;gap:30px;align-items:flex-start;flex-wrap:wrap}
+    .map-w{position:relative;flex:1;min-width:260px;max-width:500px}
+    #moonMap{width:100%;aspect-ratio:1;border-radius:50%;display:block;box-shadow:0 0 80px rgba(200,169,110,.12),0 0 200px rgba(200,169,110,.04)}
+    .ld-dot{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--accent);border:2px solid #fff;cursor:none;transform:translate(-50%,-50%);transition:all .3s;z-index:2}
+    .ld-dot::after{content:'';position:absolute;inset:-6px;border-radius:50%;border:1px solid rgba(200,169,110,.4);animation:ping 2s ease-in-out infinite}
+    @keyframes ping{0%{transform:scale(1);opacity:1}100%{transform:scale(2.5);opacity:0}}
+    .ld-dot:hover{transform:translate(-50%,-50%) scale(1.5);background:#fff;box-shadow:0 0 20px rgba(200,169,110,.5)}
+    .dl{position:absolute;font-family:'Space Mono',monospace;font-size:8px;color:var(--accent);white-space:nowrap;pointer-events:none;font-weight:700}
+    .mtt{position:absolute;background:var(--surface2);border:1px solid var(--border);padding:16px;border-radius:6px;font-size:.78rem;max-width:250px;z-index:10;pointer-events:none;opacity:0;transition:opacity .3s;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+    .mtt.show{opacity:1}.mtt strong{color:var(--accent);display:block;margin-bottom:5px;font-family:'Space Mono',monospace;font-size:10px}
+
+    /* CALCULATOR */
+    .calc-c{display:flex;gap:30px;align-items:flex-start;flex-wrap:wrap}
+    .calc-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:32px;flex:1;min-width:280px;max-width:480px;position:relative;overflow:hidden}
+    .calc-box::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+    .calc-label{font-family:'Space Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:.15em;margin-bottom:8px;text-transform:uppercase}
+    .calc-iw{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+    .calc-input{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'Space Mono',monospace;font-size:1.4rem;padding:10px 14px;width:120px;border-radius:4px;outline:none;transition:border-color .3s;text-align:center;cursor:none}
+    .calc-input:focus{border-color:var(--accent)}
+    .calc-unit{font-family:'Space Mono',monospace;font-size:13px;color:var(--muted)}
+    .calc-result{display:flex;gap:12px;flex-wrap:wrap}
+    .calc-planet{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;flex:1;min-width:90px;text-align:center;transition:all .3s;cursor:none}
+    .calc-planet:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+    .cp-icon{font-size:1.6rem;margin-bottom:4px}.cp-name{font-family:'Space Mono',monospace;font-size:7px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px}
+    .cp-val{font-family:'Space Mono',monospace;font-size:1.1rem;font-weight:700;color:var(--accent)}.cp-unit{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted)}
+    .calc-info{flex:1;min-width:240px;display:flex;flex-direction:column;gap:10px}
+    .ci-card{background:var(--surface);border:1px solid var(--border);padding:16px;border-radius:8px;transition:all .3s}
+    .ci-card:hover{border-color:rgba(200,169,110,.3);transform:translateX(4px);box-shadow:0 8px 24px rgba(0,0,0,.2)}
+    .ci-card h4{font-size:.82rem;margin-bottom:5px;color:var(--accent)}.ci-card p{font-size:.72rem;color:var(--muted);line-height:1.5}
+
+    /* COMPARISON */
+    .cmp-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:0;max-width:850px;margin:0 auto}
+    .cmp-col{background:var(--surface);border:1px solid var(--border);padding:24px;border-radius:8px;transition:all .3s}
+    .cmp-col:hover{border-color:rgba(200,169,110,.3);transform:translateY(-2px)}
+    .cmp-vs{display:flex;align-items:center;justify-content:center;padding:0 14px;font-family:'Space Mono',monospace;font-size:1.2rem;color:var(--accent);font-weight:700}
+    .cmp-h{text-align:center;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+    .ch-i{font-size:1.8rem;margin-bottom:4px}.cmp-h h3{font-size:.95rem;font-weight:800}
+    .cmp-h p{font-family:'Space Mono',monospace;font-size:8px;color:var(--accent);letter-spacing:.1em;margin-top:3px}
+    .cmp-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
+    .cmp-row:last-child{border-bottom:none}
+    .cr-l{font-family:'Space Mono',monospace;font-size:7px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+    .cr-v{font-family:'Space Mono',monospace;font-size:.78rem;font-weight:700;color:var(--text)}
+
+    /* TIMELINE */
+    .tl-w{position:relative;padding-left:40px}
+    .tl-line{position:absolute;left:0;top:8px;bottom:8px;width:2px;background:linear-gradient(to bottom,transparent,var(--accent) 10%,var(--accent) 90%,transparent)}
+    .tl-item{position:relative;padding:0 0 36px 32px;transition:all .3s;cursor:none}
+    .tl-item:hover{transform:translateX(4px)}
+    .tl-item::before{content:'';position:absolute;left:-5px;top:6px;width:12px;height:12px;border-radius:50%;background:var(--bg);border:2px solid var(--accent);transition:all .3s}
+    .tl-item:hover::before{background:var(--accent);box-shadow:0 0 16px rgba(200,169,110,.4)}
+    .tl-y{font-family:'Space Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:.2em;margin-bottom:3px}
+    .tl-t{font-size:.95rem;font-weight:700;margin-bottom:5px}
+    .tl-d{font-size:.78rem;color:var(--muted);line-height:1.55;max-width:480px}
+
+    /* FACTS */
+    .facts-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+    .fact-c{background:var(--surface);border:1px solid var(--border);padding:20px;transition:all .4s;cursor:none;border-radius:8px}
+    .fact-c:hover{border-color:rgba(200,169,110,.3);transform:translateY(-3px);box-shadow:0 14px 36px rgba(0,0,0,.3)}
+    .fc-i{font-size:1.5rem;margin-bottom:8px}.fc-t{font-size:.82rem;font-weight:700;margin-bottom:5px;color:var(--accent)}.fc-d{font-size:.72rem;color:var(--muted);line-height:1.5}
+
+    /* QUIZ */
+    .quiz-w{background:var(--surface);border:1px solid var(--border);padding:36px;max-width:680px;border-radius:8px;position:relative;overflow:hidden}
+    .quiz-w::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+    .qp{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:.15em;margin-bottom:8px}
+    .qbar{height:3px;background:var(--border);margin-bottom:26px;border-radius:3px}
+    .qbar-f{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .4s;border-radius:3px}
+    .qq{font-size:1.1rem;font-weight:700;line-height:1.4;margin-bottom:22px}
+    .qopts{display:flex;flex-direction:column;gap:8px}
+    .qopt{padding:12px 16px;border:1px solid var(--border);background:transparent;color:var(--text);font-family:'Syne',sans-serif;font-size:.82rem;text-align:left;cursor:none;transition:all .3s;border-radius:4px}
+    .qopt:hover{border-color:var(--accent);background:var(--glow);transform:translateX(4px)}
+    .qopt.correct{border-color:#4a9eff;background:rgba(74,158,255,.1);color:#4a9eff}
+    .qopt.wrong{border-color:#e05a5a;background:rgba(224,90,90,.1);color:#e05a5a}
+    .qfb{margin-top:16px;font-size:.78rem;color:var(--muted);line-height:1.6;padding:10px;background:rgba(200,169,110,.03);border-radius:4px;border-left:2px solid var(--accent)}
+    .qfb:empty{display:none}
+    .qnext{margin-top:16px;display:none}
+    .qscore{display:none;text-align:center;padding:20px 0}
+    .score-n{font-size:3.5rem;font-weight:800;color:var(--accent);font-family:'Space Mono',monospace}
+
+    /* PHASES */
+    .phases-wrap{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+    .phase-item{text-align:center;cursor:none;transition:all .3s;padding:12px}
+    .phase-item:hover{transform:translateY(-5px)}
+    .phase-moon{width:50px;height:50px;border-radius:50%;margin:0 auto 6px;transition:all .3s}
+    .phase-item:hover .phase-moon{box-shadow:0 0 30px rgba(200,169,110,.3);transform:scale(1.1)}
+    .phase-name{font-family:'Space Mono',monospace;font-size:7px;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
+    .phase-desc{font-size:.65rem;color:var(--muted);max-width:80px;margin:0 auto;line-height:1.2}
+
+    /* JOURNEY */
+    .journey-steps{display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:wrap;padding:20px 0}
+    .journey-step{text-align:center;padding:14px;flex:1;min-width:90px;position:relative;transition:all .3s}
+    .journey-step:hover{transform:translateY(-4px)}
+    .journey-step::after{content:'→';position:absolute;right:-8px;top:50%;transform:translateY(-50%);color:var(--accent);font-size:1rem;font-family:'Space Mono',monospace}
+    .journey-step:last-child::after{display:none}
+    .js-icon{font-size:1.6rem;margin-bottom:4px}.js-label{font-family:'Space Mono',monospace;font-size:7px;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}.js-val{font-size:.68rem;color:var(--muted);line-height:1.3}
+
+    /* FOOTER */
+    footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:40px}
+    .ft-c{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
+    .ft-brand p{font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:.1em;margin-top:4px}
+    .ft-links{display:flex;gap:14px;flex-wrap:wrap}
+    .ft-links a{color:var(--muted);text-decoration:none;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.1em;text-transform:uppercase;transition:color .2s;cursor:none}
+    .ft-links a:hover{color:var(--accent)}
+
+    /* FIXED BUTTONS */
+    .st{position:fixed;bottom:24px;right:24px;z-index:50;width:40px;height:40px;border-radius:50%;background:var(--surface);border:1px solid var(--border);color:var(--accent);font-size:14px;display:flex;align-items:center;justify-content:center;cursor:none;opacity:0;visibility:hidden;transition:all .3s}
+    .st.show{opacity:1;visibility:visible}.st:hover{background:var(--accent);color:var(--bg)}
+    .at{position:fixed;bottom:24px;left:24px;z-index:50;width:40px;height:40px;border-radius:50%;background:var(--surface);border:1px solid var(--border);color:var(--muted);font-size:14px;display:flex;align-items:center;justify-content:center;cursor:none;transition:all .3s}
+    .at:hover,.at.active{border-color:var(--accent);color:var(--accent)}
+
+    /* REVEAL */
+    .reveal{opacity:0;transform:translateY(30px);transition:all .8s cubic-bezier(.16,1,.3,1)}.reveal.visible{opacity:1;transform:translateY(0)}.rd1{transition-delay:.1s}.rd2{transition-delay:.2s}.rd3{transition-delay:.3s}
+
+    /* RESPONSIVE */
+    @media(max-width:768px){body{cursor:auto}.cursor,.cursor-dot{display:none!important}nav{padding:14px 20px}.nav-links{display:none}.hamburger{display:flex}.hero-content{padding:100px 20px 60px}.section{padding:70px 20px}.quiz-w{padding:24px 16px}.missions-grid{grid-template-columns:1fr}.astro-grid{grid-template-columns:repeat(2,1fr)}.map-c,.calc-c{flex-direction:column}.about-grid{grid-template-columns:1fr}.cmp-grid{grid-template-columns:1fr;gap:14px}.cmp-vs{padding:8px}.stat{min-width:80px;padding:20px 8px}.stat-number{font-size:1.6rem}footer{padding:20px}.ft-c{flex-direction:column;text-align:center}.hero-scroll{display:none}.journey-steps{flex-direction:column;gap:6px}.journey-step::after{display:none}.modal-header{flex-direction:column;align-items:center;text-align:center}.modal-stats{grid-template-columns:1fr 1fr}.phases-wrap{gap:4px}.phase-item{padding:6px}.shooting-star{display:none}.awareness-grid{grid-template-columns:1fr}.game-health-bar{width:160px}*{cursor:auto!important}}
+    @media(max-width:480px){.astro-grid,.facts-g{grid-template-columns:1fr}.hero-cta{flex-direction:column;align-items:center}.team-grid{grid-template-columns:repeat(2,1fr)}.modal-stats{grid-template-columns:1fr}.modal-crew{flex-direction:column}.game-health-bar{width:120px}}
+  </style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<!-- ===== ENHANCED LOADER ===== -->
+<div class="loader-screen" id="loader">
+  <div class="loader-stars-warp" id="loaderWarp"></div>
+  <div class="loader-rocket-wrap">
+    <div class="loader-orbit-container">
+      <div class="loader-ring"></div>
+      <div class="loader-ring"></div>
+      <div class="loader-ring"></div>
+      <div class="loader-ring"></div>
+    </div>
+    <div class="loader-moon-main">
+      <div class="crater"></div><div class="crater"></div><div class="crater"></div><div class="crater"></div><div class="crater"></div>
+    </div>
+    <div class="loader-satellite"></div>
+    <div class="loader-satellite2"></div>
+    <div class="loader-satellite3"></div>
+  </div>
+  <div class="loader-brand">Moon<span>Step</span></div>
+  <div class="loader-phase" id="loaderPhase">Sistem başlatılıyor...</div>
+  <div class="loader-hackathon">✦ Astro Hackathon 2025 ✦</div>
+  <div class="loader-bar"><div class="loader-bar-fill" id="loaderBarFill"></div></div>
+  <div class="loader-percent" id="loaderPercent">0%</div>
+  <div class="loader-countdown" id="loaderCountdown"></div>
+  <div class="loader-tip" id="loaderTip">💡 Biliyor muydunuz? Ay'dan Dünya'ya ışık sadece 1.3 saniyede ulaşır</div>
+</div>
+
+<!-- POPUPS -->
+<div class="astro-popup-overlay" id="astroOverlay"></div>
+<div class="astro-popup" id="astroPopup">
+  <div class="ap-emoji">🚀</div>
+  <h3>Astro Hackathon 2025</h3>
+  <p>Harika! Seni Astro Hackathon 2025 sayfasına yönlendiriyoruz. Ama MoonStep'e geri dönmeyi unutma! 😊🌙</p>
+  <div class="ap-btns">
+    <a href="https://tuaastrohackathon.com" target="_blank" class="btn btn-primary" onclick="closeAstroPopup()">Hackathon'a Git →</a>
+    <button class="btn btn-secondary" onclick="closeAstroPopup()">Kalmak İstiyorum</button>
+  </div>
+</div>
+
+<!-- TOAST NOTIFICATIONS -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- STARS LAYERS (PARALLAX) -->
+<div class="stars-layer layer-1" id="starsLayer1"></div>
+<div class="stars-layer layer-2" id="starsLayer2"></div>
+<div class="stars-layer layer-3" id="starsLayer3"></div>
+
+<!-- DETAIL MODAL -->
+<div class="detail-modal" id="detailModal">
+  <div class="detail-modal-content" id="detailModalContent">
+    <button class="modal-close" onclick="closeDetailModal()">✕</button>
+    <div id="detailModalBody"></div>
+  </div>
+</div>
+
+<!-- ===== ENHANCED GAME ===== -->
+<div class="game-overlay" id="gameOverlay">
+  <canvas id="gameCanvas"></canvas>
+  <div class="game-ui">
+    <div class="game-ui-left">
+      <div class="game-score" id="gameScore">SKOR: 0</div>
+      <div class="game-level" id="gameLevel">SEVİYE 1</div>
+      <div class="game-combo" id="gameCombo">COMBO x0</div>
+    </div>
+  </div>
+  <!-- HEALTH BAR TOP CENTER -->
+  <div class="game-health-wrap">
+    <div class="game-health-label">UZAY ARACI DAYANIKLILIK</div>
+    <div class="game-health-bar" id="healthBar">
+      <div class="game-health-fill" id="healthFill" style="width:100%"></div>
+      <div class="game-health-text" id="healthText">100%</div>
+    </div>
+    <div class="game-shield-indicator" id="shieldInd">🛡️ KALKAN AKTİF</div>
+  </div>
+  <button class="close-game" onclick="closeGame()">✕ KAPAT [ESC]</button>
+  <div class="game-start-screen" id="gameStart">
+    <div class="game-title">🌙 Moon Catcher</div>
+    <div class="game-subtitle">Uzay Çöplerinden Kaçın!</div>
+    <div class="game-instructions">
+      Uzayda süzülen <strong>ayları topla</strong>, <strong>uzay çöplerinden</strong> kaçın!<br>
+      <strong>Kırık uydular</strong>, <strong>hurda parçalar</strong> ve <strong>bozuk paneller</strong> seni tehdit ediyor.<br>
+      <strong>⭐ Yıldızları</strong> topla → Bonus puan!<br>
+      <strong>🛡️ Kalkanları</strong> topla → Geçici koruma!<br>
+      <strong>🧲 Mıknatısları</strong> topla → Ayları çek!
+    </div>
+    <div class="game-keys">
+      <div class="game-key">← → HAREKET</div>
+      <div class="game-key">SPACE BAŞLAT</div>
+      <div class="game-key">ESC KAPAT</div>
+    </div>
+    <button class="btn btn-primary" onclick="startGame()">🚀 OYUNU BAŞLAT</button>
+  </div>
+  <div class="game-message" id="gameMessage">
+    <h2 id="gmTitle">Oyun Bitti!</h2>
+    <div class="gm-score" id="gmScore">0</div>
+    <div class="gm-label">TOPLAM PUAN</div>
+    <div class="gm-stats" id="gmStats"></div>
+    <div class="gm-awareness" id="gmAwareness"></div>
+    <div class="gm-fact" id="gmFact"></div>
+    <div class="game-btns">
+      <button class="btn btn-primary" onclick="startGame()">🔄 Tekrar Oyna</button>
+      <button class="btn btn-secondary" onclick="closeGame()">✕ Kapat</button>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="logo">Moon<span>Step</span>
+    <a class="logo-badge" id="astroBadge" href="#" onclick="openAstroPopup();return false;" title="Astro Hackathon 2025">ASTRO 2025</a>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#about">Hakkında</a></li>
+    <li><a href="#missions">Görevler</a></li>
+    <li><a href="#astronauts">Astronotlar</a></li>
+    <li><a href="#moonmap">Ay Haritası</a></li>
+    <li><a href="#quiz">Quiz</a></li>
+    <li><a href="#" onclick="openGame();return false;">🎮 Oyun</a></li>
+  </ul>
+  <div class="hamburger" id="hamburger" onclick="toggleMobileMenu()"><span></span><span></span><span></span></div>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#about" onclick="closeMobileMenu()">Hakkında</a>
+  <a href="#awareness" onclick="closeMobileMenu()">Farkındalık</a>
+  <a href="#missions" onclick="closeMobileMenu()">Görevler</a>
+  <a href="#astronauts" onclick="closeMobileMenu()">Astronotlar</a>
+  <a href="#moonmap" onclick="closeMobileMenu()">Ay Haritası</a>
+  <a href="#quiz" onclick="closeMobileMenu()">Quiz</a>
+  <a href="#" onclick="closeMobileMenu();openGame();return false;">🎮 Oyun</a>
+  <a href="#" onclick="closeMobileMenu();openAstroPopup();return false;">🚀 Astro 2025</a>
+</div>
+
+<!-- HERO -->
+<section class="hero" id="hero">
+  <canvas id="moonCanvas"></canvas>
+  <div class="hero-content">
+    <div class="hero-tag">✦ Astro Hackathon 2025 Projesi</div>
+    <h1>Adımlarımız<em>Ay'a Uzanıyor</em></h1>
+    <div class="hero-typed" id="heroTyped"></div>
+    <p>İnsanlığın evreni keşfetme yolculuğunda Ay, ilk ve en büyük adımdır. MoonStep ile bu destansı hikâyeyi interaktif olarak deneyimleyin.</p>
+    <div class="hero-cta">
+      <a href="#missions" class="btn btn-primary">🌙 Görevleri Keşfet</a>
+      <button class="btn btn-game" onclick="openGame()">🎮 Moon Catcher Oyna</button>
+      <a href="#about" class="btn btn-secondary">Daha Fazla →</a>
+    </div>
+  </div>
+  <div class="hero-scroll"><div class="scroll-ind">KEŞFET</div></div>
+</section>
+
+<!-- STATS BAR -->
+<div class="stats-bar reveal">
+  <div class="stat"><span class="stat-icon">🚀</span><span class="stat-number" data-count="6">0</span><span class="stat-label">İnsanlı İniş</span></div>
+  <div class="stat"><span class="stat-icon">👨‍🚀</span><span class="stat-number" data-count="12">0</span><span class="stat-label">Ay'a Ayak Basan</span></div>
+  <div class="stat"><span class="stat-icon">🌍</span><span class="stat-number" data-count="384400">0</span><span class="stat-label">KM Mesafe</span></div>
+  <div class="stat"><span class="stat-icon">🏗️</span><span class="stat-number" data-count="2025">0</span><span class="stat-label">Artemis Hedefi</span></div>
+  <div class="stat"><span class="stat-icon">⏱️</span><span class="stat-number" data-count="382">0</span><span class="stat-label">Toplam Ay Saati</span></div>
+</div>
+
+<!-- AWARENESS -->
+<section class="section section-center" id="awareness">
+  <div class="section-label reveal">Uzay Farkındalığı</div>
+  <h2 class="section-title reveal"><span>Uzay Çöpleri</span> ve Farkındalık</h2>
+  <p class="section-desc reveal">İnsanlığın uzay keşfi
+muhteşem ama arkasında ciddi sorunlar bırakıyor. İşte düşündürücü rakamlar:</p>
+
+  <div class="awareness-grid">
+    <div class="awareness-card reveal">
+      <div class="aw-icon">🛰️</div>
+      <div class="aw-num" data-count="36500">0</div>
+      <div class="aw-label">Uzay Çöpü Parçası</div>
+      <div class="aw-text">10 cm'den büyük, takip edilen uzay çöpü. Her biri mermi hızında hareket ediyor.</div>
+    </div>
+    <div class="awareness-card reveal rd1">
+      <div class="aw-icon">💥</div>
+      <div class="aw-num" data-count="130">0</div>
+      <div class="aw-label">Milyon Küçük Parça</div>
+      <div class="aw-text">1 mm'den büyük takip edilemeyen tehlikeli parçacık. Küçük ama yıkıcı güçte.</div>
+    </div>
+    <div class="awareness-card reveal rd2">
+      <div class="aw-icon">🌍</div>
+      <div class="aw-num" data-count="9600">0</div>
+      <div class="aw-label">Ton Toplam Kütle</div>
+      <div class="aw-text">Dünya yörüngesindeki uzay çöplerinin toplam kütlesi. Her yıl artıyor.</div>
+    </div>
+    <div class="awareness-card reveal rd3">
+      <div class="aw-icon">⚡</div>
+      <div class="aw-num" data-count="28000">0</div>
+      <div class="aw-label">KM/S Hız</div>
+      <div class="aw-text">Uzay çöplerinin ortalama hızı. 1 cm'lik parça bile büyük hasar verebilir.</div>
+    </div>
+  </div>
+</section>
+
+<div class="sdiv"><span class="di">🌍</span></div>
+
+<!-- LIVE MOON DISTANCE -->
+<section class="section section-center" id="livedistance">
+  <div class="section-label reveal">Canlı Veri</div>
+  <h2 class="section-title reveal">Ay Şu An <span>Ne Kadar Uzakta?</span></h2>
+  <p class="section-desc reveal">Ay eliptik yörüngede döner. Mesafesi sürekli değişir.</p>
+  <div class="live-distance reveal">
+    <div class="ld-label"><span class="ld-pulse"></span> Tahmini Canlı Mesafe</div>
+    <div class="ld-value" id="liveMoonDist">384,400 km</div>
+    <div class="ld-sub">Perigee: 356,500 km &nbsp;|&nbsp; Apogee: 406,700 km</div>
+    <div class="ld-bar"><div class="ld-bar-fill" id="ldBarFill" style="width:55%"></div></div>
+  </div>
+</section>
+
+<div class="sdiv"><span class="di">✦</span></div>
+
+<!-- ABOUT -->
+<section class="section" id="about">
+  <div class="section-label reveal">Hakkımızda</div>
+  <h2 class="section-title reveal">Ay'a Olan <span>Tutkumuz</span></h2>
+  <p class="section-desc reveal">Bir ekip, bir hayal. MoonStep, uzay bilimini herkese ulaştırmak için tasarlandı.</p>
+  <div class="about-grid">
+    <div class="about-text reveal">
+      <p><strong>MoonStep</strong>, Astro Hackathon 2025 kapsamında geliştirilen interaktif bir web deneyimidir. İnsanlığın Ay'a olan yolculuğunu, bilimsel verilerle desteklenmiş görsel bir hikâye olarak sunar.</p>
+      <p>Projemiz, <strong>Apollo görevlerinden Artemis programına</strong>, astronotların hikâyelerinden Ay'ın bilimsel gizemlerine kadar geniş bir yelpazede bilgi sunar.</p>
+      <p><strong>Eğitici içerikler, interaktif araçlar ve eğlenceli oyunlarla</strong> uzay keşfini deneyimleyin.</p>
+      <div class="team-grid">
+        <div class="team-member"><div class="tm-avatar">👨‍💻</div><div class="tm-name">Geliştirici</div><div class="tm-role">Full-Stack Dev</div></div>
+        <div class="team-member"><div class="tm-avatar">🎨</div><div class="tm-name">Tasarımcı</div><div class="tm-role">UI/UX Design</div></div>
+        <div class="team-member"><div class="tm-avatar">🔬</div><div class="tm-name">Araştırmacı</div><div class="tm-role">Space Research</div></div>
+        <div class="team-member"><div class="tm-avatar">📝</div><div class="tm-name">İçerik</div><div class="tm-role">Content Writer</div></div>
+      </div>
+      <div class="team-link-wrap">
+        <a href="https://tuaastrohackathon.com/tr/astro-hackathon-2026/2026-local-events/mersin/teams/notorious?tab=about" target="_blank" class="btn btn-team">👥 Takımımızı Tanı — Notorious</a>
+      </div>
+    </div>
+    <div class="about-highlight reveal rd1">
+      <h3>🎯 Proje Değerleri</h3>
+      <div class="about-values">
+        <div class="about-value"><div class="about-value-icon">🔭</div><div><h4>Bilimsel Doğruluk</h4><p>Tüm veriler NASA ve ESA kaynaklarından doğrulanmıştır.</p></div></div>
+        <div class="about-value"><div class="about-value-icon">🎮</div><div><h4>İnteraktif Deneyim</h4><p>Oyunlar, quizler ve hesaplayıcılarla öğrenmeyi eğlenceli kılıyoruz.</p></div></div>
+        <div class="about-value"><div class="about-value-icon">♿</div><div><h4>Erişilebilirlik</h4><p>Herkesin uzay bilimini keşfedebileceği bir platform.</p></div></div>
+        <div class="about-value"><div class="about-value-icon">🌱</div><div><h4>Farkındalık</h4><p>Uzay çöpleri ve sürdürülebilirlik konusunda bilinç oluşturuyoruz.</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="sdiv"><span class="di">🌙</span></div>
+
+<!-- MOON PHASES -->
+<section class="section section-center">
+  <div class="section-label reveal">Ay'ın Evreleri</div>
+  <h2 class="section-title reveal">Ay'ın <span>29.5 Günlük</span> Döngüsü</h2>
+  <p class="section-desc reveal">Ay, Dünya etrafında dönerken Güneş ışığını farklı açılardan yansıtır.</p>
+  <div class="phases-wrap reveal">
+    <div class="phase-item"><div class="phase-moon" style="background:radial-gradient(circle at 50% 50%,#111 48%,#111 52%);border:1px solid #333"></div><div class="phase-name">Yeni Ay</div><div class="phase-desc">Görünmez</div></div>
+    <div class="phase-item"><div class="phase-moon" style="background:linear-gradient(90deg,#111 50%,#ddd 50%);overflow:hidden;position:relative"><div style="position:absolute;inset:0;background:radial-gradient(ellipse at 60% 50%,transparent 30%,#111 70%)"></div></div><div class="phase-name">İlk Hilal</div><div class="phase-desc">İnce şerit</div></div>
+    <div class="phase-item"><div class="phase-moon" style="background:linear-gradient(90deg,#111 50%,#ddd 50%)"></div><div class="phase-name">İlk Dördün</div><div class="phase-desc">Sağ yarı</div></div>
+    <div class="phase-item"><div class="phase-moon" style="background:linear-gradient(90deg,#333 20%,#ddd 50%)"></div><div class="phase-name">Şişkin Ay</div><div class="phase-desc">Neredeyse dolu</div></div>
+    <div class="phase-item"><div class="phase-moon" style="background:radial-gradient(circle at 35% 35%,#f5f0e0,#ccc 60%,#888);box-shadow:0 0 30px rgba(200,169,110,.3)"></div><div class="phase-name">Dolunay</div><div class="phase-desc">Tam aydınlık</div></div>
+    <div class="phase-item"><div class="phase-moon" style="background:linear-gradient(90deg,#ddd 50%,#333 80%)"></div><div class="phase-name">Küçülen</div><div class="phase-desc">Soldan kararır</div></div>
+    <div class="phase-item"><div class="phase-moon" style="background:linear-gradient(90deg,#ddd 50%,#111 50%)"></div><div class="phase-name">Son Dördün</div><div class="phase-desc">Sol yarı</div></div>
+    <div class="phase-item"><div class="phase-moon" style="background:linear-gradient(90deg,#ddd 50%,#111 50%);overflow:hidden;position:relative"><div style="position:absolute;inset:0;background:radial-gradient(ellipse at 40% 50%,transparent 30%,#111 70%)"></div></div><div class="phase-name">Son Hilal</div><div class="phase-desc">İnce şerit</div></div>
+  </div>
+</section>
+
+<div class="sdiv"><span class="di">🚀</span></div>
+
+<!-- JOURNEY -->
+<section class="section section-center">
+  <div class="section-label reveal">Yolculuk Rotası</div>
+  <h2 class="section-title reveal">Dünya'dan <span>Ay'a</span> Adım Adım</h2>
+  <p class="section-desc reveal">Apollo astronotları bu yolculuğu yaklaşık 3 günde tamamladı.</p>
+  <div class="journey-steps reveal">
+    <div class="journey-step"><div class="js-icon">🏗️</div><div class="js-label">Fırlatma</div><div class="js-val">Kennedy Uzay Merkezi</div></div>
+    <div class="journey-step"><div class="js-icon">🌍</div><div class="js-label">Yörünge</div><div class="js-val">Dünya yörüngesi</div></div>
+    <div class="journey-step"><div class="js-icon">🔥</div><div class="js-label">TLI Yanışı</div><div class="js-val">Ay'a doğru itiş</div></div>
+    <div class="journey-step"><div class="js-icon">🛸</div><div class="js-label">Transit</div><div class="js-val">3 günlük yolculuk</div></div>
+    <div class="journey-step"><div class="js-icon">🌙</div><div class="js-label">Ay Yörüngesi</div><div class="js-val">Çekim alanına giriş</div></div>
+    <div class="journey-step"><div class="js-icon">🦅</div><div class="js-label">İniş</div><div class="js-val">Yumuşak iniş</div></div>
+    <div class="journey-step"><div class="js-icon">👨‍🚀</div><div class="js-label">Keşif</div><div class="js-val">Yüzey yürüyüşü</div></div>
+  </div>
+</section>
+
+<div class="sdiv"><span class="di">🌕</span></div>
+
+<!-- MISSIONS -->
+<section class="section" id="missions">
+  <div class="section-label reveal">Görevler</div>
+  <h2 class="section-title reveal">İnsanlığın <span>Ay Görevleri</span></h2>
+  <p class="section-desc reveal">Apollo programı, insanlık tarihinin en cesur mühendislik başarısıdır.</p>
+  <div class="missions-grid">
+    <div class="mission-card reveal">
+      <div class="mv mv-1" data-m="11"><div class="m-badge">İLK İNSANLI İNİŞ</div><button class="m-detail-btn" onclick="openMissionDetail('apollo11')">DETAY →</button><div style="font-size:3.5rem;opacity:.15">🌕</div></div>
+      <div class="m-body"><div class="m-year">20 TEMMUZ 1969</div><div class="m-name">Apollo 11</div><div class="m-sub">İnsanlık İçin Dev Adım</div><div class="m-desc">Neil Armstrong ve Buzz Aldrin, Ay yüzeyine ilk adımı attı.</div><div class="m-stats"><div class="ms"><span class="ms-v">8g 3s</span><span class="ms-l">Süre</span></div><div class="ms"><span class="ms-v">21s 36d</span><span class="ms-l">Ay'da</span></div><div class="ms"><span class="ms-v">21.5 kg</span><span class="ms-l">Örnek</span></div></div><div class="tags"><span class="tag s">tarihi</span><span class="tag m">insanlı</span><span class="tag">başarılı</span></div></div>
+    </div>
+    <div class="mission-card reveal rd1">
+      <div class="mv mv-2" data-m="12"><div class="m-badge">HASSAS İNİŞ</div><button class="m-detail-btn" onclick="openMissionDetail('apollo12')">DETAY →</button><div style="font-size:3.5rem;opacity:.15">🌗</div></div>
+      <div class="m-body"><div class="m-year">19 KASIM 1969</div><div class="m-name">Apollo 12</div><div class="m-sub">Hassas Hedef İnişi</div><div class="m-desc">Pete Conrad liderliğindeki ekip, Surveyor 3 yanına hassas iniş gerçekleştirdi.</div><div class="m-stats"><div class="ms"><span class="ms-v">10g 4s</span><span class="ms-l">Süre</span></div><div class="ms"><span class="ms-v">31s 31d</span><span class="ms-l">Ay'da</span></div><div class="ms"><span class="ms-v">34.3 kg</span><span class="ms-l">Örnek</span></div></div><div class="tags"><span class="tag s">hassas</span><span class="tag m">insanlı</span><span class="tag">başarılı</span></div></div>
+    </div>
+    <div class="mission-card reveal rd2">
+      <div class="mv mv-3" data-m="13"><div class="m-badge">HAYATTA KALMA</div><button class="m-detail-btn" onclick="openMissionDetail('apollo13')">DETAY →</button><div style="font-size:3.5rem;opacity:.15">💥</div></div>
+      <div class="m-body"><div class="m-year">11 NİSAN 1970</div><div class="m-name">Apollo 13</div><div class="m-sub">"Houston, Bir Sorunumuz Var"</div><div class="m-desc">Oksijen tankı patladı, iniş iptal edildi. NASA'nın en başarılı başarısızlığı.</div><div class="m-stats"><div class="ms"><span class="ms-v">5g 22s</span><span class="ms-l">Süre</span></div><div class="ms"><span class="ms-v">0</span><span class="ms-l">Ay'da</span></div><div class="ms"><span class="ms-v">0 kg</span><span class="ms-l">Örnek</span></div></div><div class="tags"><span class="tag d">kriz</span><span class="tag m">insanlı</span><span class="tag">hayatta kalma</span></div></div>
+    </div>
+    <div class="mission-card reveal">
+      <div class="mv mv-4" data-m="14"><div class="m-badge">BİLİMSEL KEŞİF</div><button class="m-detail-btn" onclick="openMissionDetail('apollo14')">DETAY →</button><div style="font-size:3.5rem;opacity:.15">⛳</div></div>
+      <div class="m-body"><div class="m-year">5 ŞUBAT 1971</div><div class="m-name">Apollo 14</div><div class="m-sub">Golf ve Bilim</div><div class="m-desc">Alan Shepard, Ay'da golf oynadı! Fra Mauro bölgesinde kapsamlı araştırmalar.</div><div class="m-stats"><div class="ms"><span class="ms-v">9g 0s</span><span class="ms-l">Süre</span></div><div class="ms"><span class="ms-v">33s 31d</span><span class="ms-l">Ay'da</span></div><div class="ms"><span class="ms-v">42.3 kg</span><span class="ms-l">Örnek</span></div></div><div class="tags"><span class="tag s">bilimsel</span><span class="tag m">insanlı</span><span class="tag">başarılı</span></div></div>
+    </div>
+    <div class="mission-card reveal rd1">
+      <div class="mv mv-5" data-m="15"><div class="m-badge">AY ARACI</div><button class="m-detail-btn" onclick="openMissionDetail('apollo15')">DETAY →</button><div style="font-size:3.5rem;opacity:.15">🚗</div></div>
+      <div class="m-body"><div class="m-year">30 TEMMUZ 1971</div><div class="m-name">Apollo 15</div><div class="m-sub">İlk Ay Aracı</div><div class="m-desc">Lunar Roving Vehicle ilk kez kullanıldı. Genesis Rock bulundu.</div><div class="m-stats"><div class="ms"><span class="ms-v">12g 7s</span><span class="ms-l">Süre</span></div><div class="ms"><span class="ms-v">66s 55d</span><span class="ms-l">Ay'da</span></div><div class="ms"><span class="ms-v">77.3 kg</span><span class="ms-l">Örnek</span></div></div><div class="tags"><span class="tag s">araçlı</span><span class="tag m">insanlı</span><span class="tag">keşif</span></div></div>
+    </div>
+    <div class="mission-card reveal rd2">
+      <div class="mv mv-6" data-m="17"><div class="m-badge">SON GÖREV</div><button class="m-detail-btn" onclick="openMissionDetail('apollo17')">DETAY →</button><div style="font-size:3.5rem;opacity:.15">🏁</div></div>
+      <div class="m-body"><div class="m-year">11 ARALIK 1972</div><div class="m-name">Apollo 17</div><div class="m-sub">Son Ay Yolcuları</div><div class="m-desc">Gene Cernan ve Harrison Schmitt, Ay'a ayak basan son insanlar oldu.</div><div class="m-stats"><div class="ms"><span class="ms-v">12g 13s</span><span class="ms-l">Süre</span></div><div class="ms"><span class="ms-v">74s 59d</span><span class="ms-l">Ay'da</span></div><div class="ms"><span class="ms-v">110.5 kg</span><span class="ms-l">Örnek</span></div></div><div class="tags"><span class="tag d">son</span><span class="tag m">insanlı</span><span class="tag s">rekor</span></div></div>
+    </div>
+  </div>
+</section>
+
+<div class="sdiv"><span class="di">👨‍🚀</span></div>
+
+<!-- ASTRONAUTS -->
+<section class="section section-center" id="astronauts">
+  <div class="section-label reveal">Kahramanlar</div>
+  <h2 class="section-title reveal">Ay'a Ayak <span>Basan İnsanlar</span></h2>
+  <p class="section-desc reveal">12 insan Ay yüzeyinde yürüdü. İşte bu kahramanlar.</p>
+  <div class="astro-grid">
+    <div class="astro-card reveal"><div class="ac-avatar">👨‍🚀</div><div class="ac-name">Neil Armstrong</div><div class="ac-role">Apollo 11 — Komutan</div><div class="ac-fact">Ay'a ilk adımı atan insan.</div><button class="ac-btn" onclick="openAstroDetail('armstrong')">Detay →</button></div>
+    <div class="astro-card reveal rd1"><div class="ac-avatar">🧑‍🚀</div><div class="ac-name">Buzz Aldrin</div><div class="ac-role">Apollo 11 — LM Pilotu</div><div class="ac-fact">İkinci insan. Uzayda komünyon yaptı.</div><button class="ac-btn" onclick="openAstroDetail('aldrin')">Detay →</button></div>
+    <div class="astro-card reveal rd2"><div class="ac-avatar">👨‍🚀</div><div class="ac-name">Pete Conrad</div><div class="ac-role">Apollo 12 — Komutan</div><div class="ac-fact">Esprili kişiliğiyle tanınır.</div><button class="ac-btn" onclick="openAstroDetail('conrad')">Detay →</button></div>
+    <div class="astro-card reveal rd3"><div class="ac-avatar">🧑‍🚀</div><div class="ac-name">Alan Bean</div><div class="ac-role">Apollo 12 — LM Pilotu</div><div class="ac-fact">Emeklilik sonrası Ay ressamı oldu.</div><button class="ac-btn" onclick="openAstroDetail('bean')">Detay →</button></div>
+    <div class="astro-card reveal"><div class="ac-avatar">👨‍🚀</div><div class="ac-name">Alan Shepard</div><div class="ac-role">Apollo 14 — Komutan</div><div class="ac-fact">Ay'da golf oynayan adam!</div><button class="ac-btn" onclick="openAstroDetail('shepard')">Detay →</button></div>
+    <div class="astro-card reveal rd1"><div class="ac-avatar">🧑‍🚀</div><div class="ac-name">Edgar Mitchell</div><div class="ac-role">Apollo 14 — LM Pilotu</div><div class="ac-fact">Bilinç araştırmalarına yöneldi.</div><button class="ac-btn" onclick="openAstroDetail('mitchell')">Detay →</button></div>
+    <div class="astro-card reveal rd2"><div class="ac-avatar">👨‍🚀</div><div class="ac-name">David Scott</div><div class="ac-role">Apollo 15 — Komutan</div><div class="ac-fact">Galileo'nun tüy deneyini tekrarladı.</div><button class="ac-btn" onclick="openAstroDetail('scott')">Detay →</button></div>
+    <div class="astro-card reveal rd3"><div class="ac-avatar">🧑‍🚀</div><div class="ac-name">James Irwin</div><div class="ac-role">Apollo 15 — LM Pilotu</div><div class="ac-fact">Mistik bir uyanış yaşadı.</div><button class="ac-btn" onclick="openAstroDetail('irwin')">Detay →</button></div>
+    <div class="astro-card reveal"><div class="ac-avatar">👨‍🚀</div><div class="ac-name">John Young</div><div class="ac-role">Apollo 16 — Komutan</div><div class="ac-fact">6 kez uzaya giden efsane.</div><button class="ac-btn" onclick="openAstroDetail('young')">Detay →</button></div>
+    <div class="astro-card reveal rd1"><div class="ac-avatar">🧑‍🚀</div><div class="ac-name">Charles Duke</div><div class="ac-role">Apollo 16 — LM Pilotu</div><div class="ac-fact">En genç Ay yürüyüşçüsü.</div><button class="ac-btn" onclick="openAstroDetail('duke')">Detay →</button></div>
+    <div class="astro-card reveal rd2"><div class="ac-avatar">👨‍🚀</div><div class="ac-name">Gene Cernan</div><div class="ac-role">Apollo 17 — Komutan</div><div class="ac-fact">Ay'da yürüyen son insan.</div><button class="ac-btn" onclick="openAstroDetail('cernan')">Detay →</button></div>
+    <div class="astro-card reveal rd3"><div class="ac-avatar">🧑‍🚀</div><div class="ac-name">Harrison Schmitt</div><div class="ac-role">Apollo 17 — LM Pilotu</div><div class="ac-fact">İlk sivil bilim insanı.</div><button class="ac-btn" onclick="openAstroDetail('schmitt')">Detay →</button></div>
+  </div>
+</section>
+
+<div class="sdiv"><span class="di">🗺️</span></div>
+
+<!-- MOON MAP -->
+<section class="section" id="moonmap">
+  <div class="section-label reveal">Etkileşimli Harita</div>
+  <h2 class="section-title reveal">Ay <span>İniş Noktaları</span></h2>
+  <p class="section-desc reveal">Apollo görevlerinin iniş noktalarını keşfedin.</p>
+  <div class="map-c">
+    <div class="map-w reveal" id="moonMapWrap">
+      <canvas id="moonMap" width="600" height="600"></canvas>
+      <div class="ld-dot" style="top:52%;left:48%" data-info="Apollo 11 — Mare Tranquillitatis (Huzur Denizi). 20 Temmuz 1969." data-name="Apollo 11"></div>
+      <div class="dl" style="top:48%;left:51%">A11</div>
+      <div class="ld-dot" style="top:55%;left:38%" data-info="Apollo 12 — Oceanus Procellarum. Surveyor 3'ün yanına hassas iniş." data-name="Apollo 12"></div>
+      <div class="dl" style="top:51%;left:35%">A12</div>
+      <div class="ld-dot" style="top:56%;left:42%" data-info="Apollo 14 — Fra Mauro. Alan Shepard golf oynadı." data-name="Apollo 14"></div>
+      <div class="dl" style="top:60%;left:40%">A14</div>
+      <div class="ld-dot" style="top:38%;left:52%" data-info="Apollo 15 — Hadley Rille. İlk Ay aracı, Genesis Rock." data-name="Apollo 15"></div>
+      <div class="dl" style="top:34%;left:55%">A15</div>
+      <div class="ld-dot" style="top:45%;left:56%" data-info="Apollo 16 — Descartes Yaylası. Duke aile fotoğrafı bıraktı." data-name="Apollo 16"></div>
+      <div class="dl" style="top:41%;left:59%">A16</div>
+      <div class="ld-dot" style="top:42%;left:62%" data-info="Apollo 17 — Taurus-Littrow Vadisi. Son insanlı görev." data-name="Apollo 17"></div>
+      <div class="dl" style="top:38%;left:65%">A17</div>
+      <div class="mtt" id="mapTooltip"></div>
+    </div>
+    <div class="calc-info reveal rd1">
+      <div class="ci-card"><h4>🌊 Mare Tranquillitatis</h4><p>Apollo 11'in indiği "Huzur Denizi". Eski lav akıntısıyla oluşmuş düz ova.</p></div>
+      <div class="ci-card"><h4>⛰️ Hadley Rille</h4><p>Apollo 15. 1.5 km genişliğinde devasa bir vadi. Eski lav tüneli.</p></div>
+      <div class="ci-card"><h4>🏔️ Taurus-Littrow</h4><p>Apollo 17. 2 km dağlarla çevrili. Turuncu toprak keşfedildi.</p></div>
+      <div class="ci-card"><h4>🎯 Artemis Bölgesi</h4><p>2025+ hedefli Artemis III, güney kutbu yakınına inmeyi planlıyor.</p></div>
+    </div>
+  </div>
+</section>
+
+<div class="sdiv"><span class="di">⚖️</span></div>
+
+<!-- COMPARISON -->
+<section class="section section-center">
+  <div class="section-label reveal">Karşılaştırma</div>
+  <h2 class="section-title reveal">Dünya vs <span>Ay</span></h2>
+  <p class="section-desc reveal">İki gök cisminin temel farklarını keşfedin.</p>
+  <div class="cmp-grid reveal">
+    <div class="cmp-col">
+      <div class="cmp-h"><div class="ch-i">🌍</div><h3>Dünya</h3><p>Ana Gezegenimiz</p></div>
+      <div class="cmp-row"><span class="cr-l">Çap</span><span class="cr-v">12,742 km</span></div>
+      <div class="cmp-row"><span class="cr-l">Kütle</span><span class="cr-v">5.97×10²⁴ kg</span></div>
+      <div class="cmp-row"><span class="cr-l">Yerçekimi</span><span class="cr-v">9.81 m/s²</span></div>
+      <div class="cmp-row"><span class="cr-l">Atmosfer</span><span class="cr-v">Yoğun N₂/O₂</span></div>
+      <div class="cmp-row"><span class="cr-l">Sıcaklık</span><span class="cr-v">-89°C ~ 57°C</span></div>
+      <div class="cmp-row"><span class="cr-l">Gün Süresi</span><span class="cr-v">24 saat</span></div>
+      <div class="cmp-row"><span class="cr-l">Su</span><span class="cr-v">%71 yüzey</span></div>
+    </div>
+    <div class="cmp-vs">VS</div>
+    <div class="cmp-col">
+      <div class="cmp-h"><div class="ch-i">🌙</div><h3>Ay</h3><p>Doğal Uydumuz</p></div>
+      <div class="cmp-row"><span class="cr-l">Çap</span><span class="cr-v">3,474 km</span></div>
+      <div class="cmp-row"><span class="cr-l">Kütle</span><span class="cr-v">7.34×10²² kg</span></div>
+      <div class="cmp-row"><span class="cr-l">Yerçekimi</span><span class="cr-v">1.62 m/s²</span></div>
+      <div class="cmp-row"><span class="cr-l">Atmosfer</span><span class="cr-v">Yok (Ekzosfer)</span></div>
+      <div class="cmp-row"><span class="cr-l">Sıcaklık</span><span class="cr-v">-173°C ~ 127°C</span></div>
+      <div class="cmp-row"><span class="cr-l">Gün Süresi</span><span class="cr-v">29.5 gün</span></div>
+      <div class="cmp-row"><span class="cr-l">Su</span><span class="cr-v">Buz (kutuplarda)</span></div>
+    </div>
+  </div>
+</section>
+
+<div class="sdiv"><span class="di">⚖️</span></div>
+
+<!-- CALCULATOR -->
+<section class="section" id="calculator">
+  <div class="section-label reveal">Araç</div>
+  <h2 class="section-title reveal">Ağırlık <span>Hesaplayıcı</span></h2>
+  <p class="section-desc reveal">Kilonuzu Ay'da ve diğer gezegenlerde öğrenin.</p>
+  <div class="calc-c">
+    <div class="calc-box reveal">
+      <div class="calc-label">Dünya'daki Kilonuz</div>
+      <div class="calc-iw"><input type="number" class="calc-input" id="weightInput" value="70" min="1" max="500"><span class="calc-unit">kg</span></div>
+      <div class="calc-result" id="calcResult"></div>
+    </div>
+    <div class="calc-info reveal rd1">
+      <div class="ci-card"><h4>🌙 Ay'da Neden Hafifiz?</h4><p>Ay'ın yerçekimi Dünya'nın 1/6'sıdır. Apollo astronotları "kanguru sıçraması" yaparak ilerledi.</p></div>
+      <div class="ci-card"><h4>⚡ Kütle vs Ağırlık</h4><p>Kütleniz her yerde aynı ama ağırlığınız yerçekimine göre değişir!</p></div>
+    </div>
+  </div>
+</section>
+
+<div class="sdiv"><span class="di">📅</span></div>
+
+<!-- TIMELINE -->
+<section class="section" id="timeline">
+  <div class="section-label reveal">Zaman Çizelgesi</div>
+  <h2 class="section-title reveal">Ay Keşfinin <span>Tarihi</span></h2>
+  <p class="section-desc reveal">Antik çağlardan modern çağa, insanlığın Ay'la ilişkisi.</p>
+  <div class="tl-w reveal">
+    <div class="tl-line"></div>
+    <div class="tl-item"><div class="tl-y">MÖ 150</div><div class="tl-t">Hipparkhos'un Hesaplaması</div><div class="tl-d">Ay'ın mesafesini ilk kez oldukça doğru hesapladı.</div></div>
+    <div class="tl-item"><div class="tl-y">1609</div><div class="tl-t">Galileo'nun Teleskobu</div><div class="tl-d">Ay'ın kraterleri ve dağları ilk kez gözlemlendi.</div></div>
+    <div class="tl-item"><div class="tl-y">1959</div><div class="tl-t">Luna 2 — İlk Temas</div><div class="tl-d">Ay'a çarpan ilk insan yapımı nesne.</div></div>
+    <div class="tl-item"><div class="tl-y">1966</div><div class="tl-t">Luna 9 — İlk Yumuşak İniş</div><div class="tl-d">Ay yüzeyinin ilk fotoğrafları çekildi.</div></div>
+    <div class="tl-item"><div class="tl-y">1969</div><div class="tl-t">Apollo 11 — Dev Adım</div><div class="tl-d">Neil Armstrong ve Buzz Aldrin, Ay'a ilk adımı attı.</div></div>
+    <div class="tl-item"><div class="tl-y">1972</div><div class="tl-t">Apollo 17 — Son Görev</div><div class="tl-d">Cernan ve Schmitt, son Ay yürüyüşçüleri oldu.</div></div>
+    <div class="tl-item"><div class="tl-y">2009</div><div class="tl-t">LCROSS — Su Keşfi</div><div class="tl-d">Güney kutbunda su buzu keşfedildi.</div></div>
+    <div class="tl-item"><div class="tl-y">2024</div><div class="tl-t">Artemis Programı</div><div class="tl-d">İlk kadın ve siyahi astronotu Ay'a gönderme hedefi.</div></div>
+    <div class="tl-item"><div class="tl-y">2030+</div><div class="tl-t">Ay Üssü Planları</div><div class="tl-d">Kalıcı Ay üssü ve Mars geçiş noktası.</div></div>
+  </div>
+</section>
+
+<div class="sdiv"><span class="di">💡</span></div>
+
+<!-- FACTS -->
+<section class="section section-center" id="facts">
+  <div class="section-label reveal">İlginç Bilgiler</div>
+  <h2 class="section-title reveal">Ay Hakkında <span>Şaşırtan</span> Gerçekler</h2>
+  <p class="section-desc reveal">Bu bilgiler sizi şaşırtacak.</p>
+  <div class="facts-g">
+    <div class="fact-c reveal"><div class="fc-i">🌊</div><div class="fc-t">Gelgit Gücü</div><div class="fc-d">Ay'ın çekim gücü günde iki gelgit oluşturur.</div></div>
+    <div class="fact-c reveal rd1"><div class="fc-i">👣</div><div class="fc-t">Sonsuz Ayak İzi</div><div class="fc-d">Rüzgar yok — ayak izleri milyonlarca yıl kalacak.</div></div>
+    <div class="fact-c reveal rd2"><div class="fc-i">🏃</div><div class="fc-t">Koşarak Ay'a</div><div class="fc-d">10 km/h ile ~4.4 yıl koşmanız gerekir!</div></div>
+    <div class="fact-c reveal rd3"><div class="fc-i">🔭</div><div class="fc-t">Uzaklaşan Ay</div><div class="fc-d">Ay her yıl 3.8 cm uzaklaşıyor.</div></div>
+    <div class="fact-c reveal"><div class="fc-i">🌡️</div><div class="fc-t">Aşırı Sıcaklık</div><div class="fc-d">127°C gündüz, -173°C gece. 300° fark!</div></div>
+    <div class="fact-c reveal rd1"><div class="fc-i">🌑</div><div class="fc-t">Karanlık Yüz</div><div class="fc-d">Aslında karanlık değil, sadece göremiyoruz.</div></div>
+    <div class="fact-c reveal rd2"><div class="fc-i">💎</div><div class="fc-t">Ay Toprağı</div><div class="fc-d">382 kg Ay örneği Dünya'ya getirildi.</div></div>
+    <div class="fact-c reveal rd3"><div class="fc-i">📡</div><div class="fc-t">Lazer Yansıtıcı</div><div class="fc-d">Apollo'nun bıraktığı aynalarla mm hassasiyetinde ölçüm.</div></div>
+  </div>
+</section>
+
+<div class="sdiv"><span class="di">❓</span></div>
+
+<!-- QUIZ -->
+<section class="section" id="quiz">
+  <div class="section-label reveal">Bilgi Testi</div>
+  <h2 class="section-title reveal">Ay <span>Bilgi Yarışması</span></h2>
+  <p class="section-desc reveal">10 soru, ne kadar biliyorsunuz?</p>
+  <div class="quiz-w reveal" id="quizWrap">
+    <div class="qp" id="quizProgress">SORU 1 / 10</div>
+    <div class="qbar"><div class="qbar-f" id="quizBar" style="width:10%"></div></div>
+    <div class="qq" id="quizQ"></div>
+    <div class="qopts" id="quizOpts"></div>
+    <div class="qfb" id="quizFb"></div>
+    <button class="btn btn-primary qnext" id="quizNext" onclick="nextQuizQ()">Sonraki Soru →</button>
+    <div class="qscore" id="quizScore">
+      <div style="font-size:2.5rem;margin-bottom:10px">🏆</div>
+      <div class="score-n" id="quizScoreNum">0/10</div>
+      <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:.15em;margin:10px 0 20px">DOĞRU CEVAP</div>
+      <div id="quizScoreMsg" style="font-size:.85rem;color:var(--muted);line-height:1.7;margin-bottom:16px"></div>
+      <button class="btn btn-primary" onclick="startQuiz()">🔄 Tekrar Dene</button>
+    </div>
+  </div>
+</section>
+
+<div class="sdiv"><span class="di">🌙</span></div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="ft-c">
+    <div class="ft-brand"><div class="logo">Moon<span>Step</span></div><p>Astro Hackathon 2025 — İnsanlığın Ay Yolculuğu</p></div>
+    <div class="ft-links">
+      <a href="#hero">Başa Dön</a>
+      <a href="#missions">Görevler</a>
+      <a href="#astronauts">Astronotlar</a>
+      <a href="#quiz">Quiz</a>
+      <a href="#" onclick="openGame();return false;">Oyun</a>
+      <a href="https://tuaastrohackathon.com/tr/astro-hackathon-2026/2026-local-events/mersin/teams/notorious?tab=about" target="_blank">Takım</a>
+      <a href="#" onclick="openAstroPopup();return false;">Astro 2025</a>
+    </div>
+  </div>
+</footer>
+
+<button class="st" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<button class="at" id="audioToggle" onclick="toggleAudio()" title="Ambient Ses">🔇</button>
+
+<!-- ==================== JAVASCRIPT ==================== -->
+<script>
+// ═══════════════ DATA ═══════════════
+const missionDetails={
+  apollo11:{emoji:'🌕',name:'Apollo 11',role:'İlk İnsanlı Ay İnişi',dates:'16-24 Temmuz 1969',quote:'"Bu bir insan için küçük bir adım, insanlık için dev bir sıçramadır." — Neil Armstrong',text:'Apollo 11, Ay\'a iniş yapan ilk görevdi. Komutan Neil Armstrong ve Buzz Aldrin, 20 Temmuz 1969\'da Eagle modülüyle indi. Michael Collins yörüngede bekledi.',stats:[{v:'8g 3s',l:'Görev Süresi'},{v:'21s 36dk',l:'Ay\'da'},{v:'21.5 kg',l:'Örnek'}],crew:[{name:'Neil Armstrong',role:'Komutan'},{name:'Buzz Aldrin',role:'LM Pilotu'},{name:'Michael Collins',role:'CM Pilotu'}],facts:['İnişte sadece 25 saniyelik yakıt kalmıştı.','600 milyon kişi canlı izledi.','Aldrin Ay\'da komünyon yaptı.','21 gün karantinada kaldılar.']},
+  apollo12:{emoji:'🌗',name:'Apollo 12',role:'Hassas İniş',dates:'14-24 Kasım 1969',quote:'"Tam Surveyor kraterinin kenarındayız!" — Pete Conrad',text:'İkinci insanlı Ay inişi. Kalkışta iki yıldırım çarptı ama görev başarılı oldu. Surveyor 3\'ün 200m yakınına indi.',stats:[{v:'10g 4s',l:'Süre'},{v:'31s 31dk',l:'Ay\'da'},{v:'34.3 kg',l:'Örnek'}],crew:[{name:'Pete Conrad',role:'Komutan'},{name:'Alan Bean',role:'LM Pilotu'},{name:'Richard Gordon',role:'CM Pilotu'}],facts:['İki yıldırım çarptı ama görev devam etti.','Bean emeklilik sonrası Ay ressamı oldu.','Surveyor 3 parçaları Dünya\'ya getirildi.']},
+  apollo13:{emoji:'💥',name:'Apollo 13',role:'Başarılı Başarısızlık',dates:'11-17 Nisan 1970',quote:'"Houston, bir sorunumuz var." — Jack Swigert',text:'Oksijen tankı patladı, iniş iptal edildi. Mürettebat Ay etrafından dolaşıp Dünya\'ya döndü. NASA\'nın en başarılı başarısızlığı.',stats:[{v:'5g 22s',l:'Süre'},{v:'İniş yok',l:'Ay\'da'},{v:'0 kg',l:'Örnek'}],crew:[{name:'Jim Lovell',role:'Komutan'},{name:'Jack Swigert',role:'CM Pilotu'},{name:'Fred Haise',role:'LM Pilotu'}],facts:['Kabin 3°C\'ye düştü.','CO₂ filtresi bantla çözüldü.','Tom Hanks ile filme uyarlandı.']},
+  apollo14:{emoji:'⛳',name:'Apollo 14',role:'Bilimsel Keşif',dates:'31 Ocak - 9 Şubat 1971',quote:'"Uzun ve güzel bir atış!" — Alan Shepard',text:'Fra Mauro bölgesine iniş yapıldı. Shepard Ay\'da golf vurdu! ABD\'nin ilk uzay yolcusu artık Ay\'da yürüyordu.',stats:[{v:'9g',l:'Süre'},{v:'33s 31dk',l:'Ay\'da'},{v:'42.3 kg',l:'Örnek'}],crew:[{name:'Alan Shepard',role:'Komutan'},{name:'Edgar Mitchell',role:'LM Pilotu'},{name:'Stuart Roosa',role:'CM Pilotu'}],facts:['Shepard gizlice golf sopası getirdi!','Roosa yüzlerce ağaç tohumu taşıdı — "Ay Ağaçları" dikildi.','Shepard en yaşlı Ay yürüyüşçüsüydü (47).']},
+  apollo15:{emoji:'🚗',name:'Apollo 15',role:'İlk Ay Aracı',dates:'26 Temmuz - 7 Ağustos 1971',quote:'"Galileo haklıymış!" — David Scott',text:'İlk Lunar Roving Vehicle kullanıldı. Genesis Rock (4.1 milyar yaşında) bulundu. Canlı yayında tüy-çekiç deneyi yapıldı.',stats:[{v:'12g 7s',l:'Süre'},{v:'66s 55dk',l:'Ay\'da'},{v:'77.3 kg',l:'Örnek'}],crew:[{name:'David Scott',role:'Komutan'},{name:'James Irwin',role:'LM Pilotu'},{name:'Alfred Worden',role:'CM Pilotu'}],facts:['Tüy ve çekiç aynı anda düştü — canlı yayında!','LRV ile 27.9 km yol katettiler.','Worden Ay yörüngesinde yürüyüş yaptı.']},
+  apollo17:{emoji:'🏁',name:'Apollo 17',role:'Son İnsanlı Görev',dates:'7-19 Aralık 1972',quote:'"İnsanoğlunun geleceğine inanıyorum." — Gene Cernan',text:'Son insanlı Ay görevi. Cernan ve Schmitt, Taurus-Littrow\'da 3 gün geçirdi. Schmitt ilk bilim insanı astronottu.',stats:[{v:'12g 13s',l:'Süre'},{v:'74s 59dk',l:'Ay\'da'},{v:'110.5 kg',l:'Örnek'}],crew:[{name:'Gene Cernan',role:'Komutan'},{name:'Harrison Schmitt',role:'LM Pilotu'},{name:'Ronald Evans',role:'CM Pilotu'}],facts:['Cernan kızının "TDC" harflerini Ay\'a yazdı.','Turuncu toprak volkanik aktiviteyi kanıtladı.','50+ yıldır kimse geri dönmedi.']}
+};
+
+const astroDetails={
+  armstrong:{emoji:'👨‍🚀',name:'Neil Armstrong',role:'Komutan — Apollo 11',dates:'1930–2012',quote:'"Bu bir insan için küçük bir adım, insanlık için dev bir sıçramadır."',text:'Ay\'da yürüyen ilk insan. Kore Savaşı pilotu, X-15 test pilotu. Sessiz ve mütevazı kişiliğiyle tanınır.',stats:[{v:'1',l:'Görev'},{v:'8g 14s',l:'Uzayda'},{v:'2s 31dk',l:'Ay Yürüyüşü'}],facts:['İnişte bilgisayar alarmları çaldı, manuel kontrolle indi.','2012\'de kalp ameliyatı komplikasyonlarından vefat etti.','600 milyon kişi ilk adımını izledi.']},
+  aldrin:{emoji:'🧑‍🚀',name:'Buzz Aldrin',role:'LM Pilotu — Apollo 11',dates:'1930–Hayatta',quote:'"Muhteşem bir ıssızlık."',text:'Ay\'da yürüyen ikinci insan. MIT doktoralı. Uzayda ilk komünyon yaptı. 93 yaşında evlendi!',stats:[{v:'2',l:'Görev'},{v:'12g 1s',l:'Uzayda'},{v:'2s 15dk',l:'Yürüyüş'}],facts:['Buzz lakabı kız kardeşinin "buzzer" demesinden gelir.','Ay\'ı inkar eden birine yumruk attı.','Mars kolonizasyonu savunucusu.']},
+  conrad:{emoji:'👨‍🚀',name:'Pete Conrad',role:'Komutan — Apollo 12',dates:'1930–1999',quote:'"Neil için küçük olabilir ama benim için uzun bir adım!"',text:'Esprili kişiliğiyle tanınır. Skylab 2\'yi kurtardı.',stats:[{v:'4',l:'Görev'},{v:'49g 3s',l:'Uzayda'},{v:'7s 45dk',l:'Yürüyüş'}],facts:['Armstrong\'a espriyle karşılık verdi.','1999\'da motosiklet kazasında vefat etti.']},
+  bean:{emoji:'🧑‍🚀',name:'Alan Bean',role:'LM Pilotu — Apollo 12',dates:'1932–2018',quote:'"Ay\'ı resmetmek onu yeniden yaşamak gibi."',text:'Emeklilikte profesyonel ressam oldu. Boyalarına gerçek Ay tozu kattı.',stats:[{v:'2',l:'Görev'},{v:'69g 15s',l:'Uzayda'},{v:'7s 45dk',l:'Yürüyüş'}],facts:['Resimlerinde Ay tozu kullandı.','Yanlışlıkla TV kamerasını bozdu.']},
+  shepard:{emoji:'👨‍🚀',name:'Alan Shepard',role:'Komutan — Apollo 14',dates:'1923–1998',quote:'"Uzun ve güzel bir atıştı!"',text:'ABD\'nin ilk uzay yolcusu. Ay\'da golf vurdu! İç kulak ameliyatından sonra Apollo 14\'e komuta etti.',stats:[{v:'2',l:'Görev'},{v:'9g 17s',l:'Uzayda'},{v:'9s 22dk',l:'Yürüyüş'}],facts:['Golf sopasını gizlice sakladı.','Meniere hastalığı 6 yıl uçuşunu engelledi.']},
+  mitchell:{emoji:'🧑‍🚀',name:'Edgar Mitchell',role:'LM Pilotu — Apollo 14',dates:'1930–2016',quote:'"Evrenle bir bütün olduğumuzu hissettim."',text:'MIT doktoralı. Uzay deneyiminden sonra bilinç araştırmalarına yöneldi.',stats:[{v:'1',l:'Görev'},{v:'9g',l:'Uzayda'},{v:'9s 22dk',l:'Yürüyüş'}],facts:['Dönüşte telepati deneyleri yaptı.','Noetic Sciences Enstitüsü\'nü kurdu.']},
+  scott:{emoji:'👨‍🚀',name:'David Scott',role:'Komutan — Apollo 15',dates:'1932–Hayatta',quote:'"Galileo haklıymış!"',text:'3 uzay görevinde uçtu. Canlı yayında tüy-çekiç deneyi yaptı.',stats:[{v:'3',l:'Görev'},{v:'22g 18s',l:'Uzayda'},{v:'18s 35dk',l:'Yürüyüş'}],facts:['Gemini 8\'de ilk kenetlenmeyi gerçekleştirdi.','Genesis Rock\'u heyecanla buldu.']},
+  irwin:{emoji:'🧑‍🚀',name:'James Irwin',role:'LM Pilotu — Apollo 15',dates:'1930–1991',quote:'"Tanrı\'nın varlığını en güçlü Ay\'da hissettim."',text:'Ay deneyimini mistik uyanış olarak tanımladı. Ağrı Dağı\'nda Nuh\'un Gemisi\'ni aradı.',stats:[{v:'1',l:'Görev'},{v:'12g 7s',l:'Uzayda'},{v:'18s 35dk',l:'Yürüyüş'}],facts:['Ay\'da kalp ritmi bozukluğu yaşadı.','3 kez Ağrı Dağı\'na gitti.']},
+  young:{emoji:'👨‍🚀',name:'John Young',role:'Komutan — Apollo 16',dates:'1930–2018',quote:'"Uzay insanlığın sigorta poliçesidir."',text:'42 yıl NASA\'da, 6 uzay görevi. Uzay mekiğinin ilk uçuşunu komuta etti.',stats:[{v:'6',l:'Görev'},{v:'34g 19s',l:'Uzayda'},{v:'20s 14dk',l:'Yürüyüş'}],facts:['Gemini 3\'e gizlice sandviç soktu.','Mekik test edilmeden ilk uçuşunu yaptı!']},
+  duke:{emoji:'🧑‍🚀',name:'Charles Duke',role:'LM Pilotu — Apollo 16',dates:'1935–Hayatta',quote:'"Fantastik! Burası muhteşem!"',text:'En genç Ay yürüyüşçüsü (36). Apollo 11\'de CAPCOM olarak Armstrong\'la konuştu.',stats:[{v:'1',l:'Görev'},{v:'11g 1s',l:'Uzayda'},{v:'20s 14dk',l:'Yürüyüş'}],facts:['Ay\'a aile fotoğrafını bıraktı.','CAPCOM olarak sesi titriyordu.']},
+  cernan:{emoji:'👨‍🚀',name:'Gene Cernan',role:'Komutan — Apollo 17',dates:'1934–2017',quote:'"Son adımları atarken... son olmayacağına inanıyorum."',text:'Ay\'da yürüyen son insan. Kızının harflerini "TDC" olarak Ay\'a yazdı.',stats:[{v:'3',l:'Görev'},{v:'23g 14s',l:'Uzayda'},{v:'22s 4dk',l:'Yürüyüş'}],facts:['Kızının harfleri hâlâ Ay\'da.','Gemini 9A\'da neredeyse öldü.','50+ yıldır kimse "son" ünvanını alamadı.']},
+  schmitt:{emoji:'🧑‍🚀',name:'Harrison Schmitt',role:'LM Pilotu — Apollo 17',dates:'1935–Hayatta',quote:'"Turuncu toprak! Her yerde turuncu toprak!"',text:'Ay\'a giden tek sivil bilim insanı (jeolog). Turuncu Ay toprağını keşfetti.',stats:[{v:'1',l:'Görev'},{v:'12g 13s',l:'Uzayda'},{v:'22s 4dk',l:'Yürüyüş'}],facts:['Turuncu toprak volkanik aktiviteyi kanıtladı.','Sonra New Mexico Senatörü oldu.','89 yaşında hâlâ hayatta.']}
+};
+
+const quizData=[
+  {q:"Ay'a ilk adımı atan astronot?",o:["Buzz Aldrin","Neil Armstrong","Michael Collins","John Glenn"],a:1,fb:"Neil Armstrong, 20 Temmuz 1969'da ilk adımı attı."},
+  {q:"Apollo 11 hangi yıl Ay'a indi?",o:["1967","1968","1969","1970"],a:2,fb:"20 Temmuz 1969'da Mare Tranquillitatis'e indi."},
+  {q:"Ay'ın ortalama uzaklığı?",o:["184,400 km","284,400 km","384,400 km","484,400 km"],a:2,fb:"Ortalama 384,400 km."},
+  {q:"Hangi Apollo 'başarılı başarısızlık'?",o:["Apollo 1","Apollo 11","Apollo 13","Apollo 17"],a:2,fb:"Apollo 13'te oksijen tankı patladı."},
+  {q:"Ay'da yürüyen toplam kaç kişi?",o:["6","8","10","12"],a:3,fb:"6 görevde toplam 12 astronot."},
+  {q:"Ay'ın yerçekimi kaçta kaç?",o:["1/2","1/4","1/6","1/8"],a:2,fb:"Dünya'nın yaklaşık 1/6'sı."},
+  {q:"Ay'da golf oynayan astronot?",o:["Armstrong","Aldrin","Alan Shepard","Cernan"],a:2,fb:"Alan Shepard, Apollo 14'te golf vurdu."},
+  {q:"Ay'da yürüyen son insan?",o:["Schmitt","Gene Cernan","Scott","Duke"],a:1,fb:"Gene Cernan, Apollo 17 komutanı."},
+  {q:"İlk Ay aracı hangi görevde?",o:["Apollo 13","Apollo 14","Apollo 15","Apollo 16"],a:2,fb:"LRV ilk kez Apollo 15'te kullanıldı."},
+  {q:"Ay'ın gün süresi ne kadar?",o:["24 saat","7 gün","14.75 gün","29.5 gün"],a:3,fb:"29.5 Dünya günü sürer."}
+];
+
+const gameFacts=[
+  "382 kg Ay taşı hâlâ inceleniyor.","Apollo astronotları toplam 80+ saat Ay'da yürüdü.",
+  "Ay'ın yüzeyi ~38 milyon km² — Afrika'dan büyük.","Artemis programı ilk kadın astronotu hedefliyor.",
+  "Ay'da bırakılan bayraklar güneş radyasyonuyla ağardı.","Ay depremlerini ölçmek için sismometre bırakıldı.",
+  "Ay her yıl 3.8 cm Dünya'dan uzaklaşıyor.","Ay'daki ayak izleri milyonlarca yıl kalacak."
+];
+const gameAwareness=[
+  "🛰️ Yörüngede 36.000+ uzay çöpü takip ediliyor — her biri tehlikeli!",
+  "♻️ Uzay sürdürülebilirliği gelecek nesillerin uzay erişimi için kritik.",
+  "💥 Uzay çöpleri ISS'i ve aktif uyduları her gün tehdit ediyor.",
+  "🔬 NASA lazer ve ağ teknolojileriyle temizleme projeleri geliştiriyor.",
+  "🌍 Kessler Sendromu: çöpler çarpışarak katlanarak çoğalabilir!",
+  "🛡️ Her uzay aracı küçük çöp parçalarına karşı kalkan taşıyor."
+];
+
+const loaderTips=[
+  "💡 Ay'dan Dünya'ya ışık 1.3 saniyede ulaşır",
+  "🌙 Ay her yıl 3.8 cm uzaklaşıyor",
+  "🚀 Apollo 11 bilgisayarı bir hesap makinesinden zayıftı",
+  "👣 Ay'daki ayak izleri milyonlarca yıl kalacak",
+  "🌍 Ay olmasaydı Dünya'nın günü sadece 6 saat olurdu",
+  "⚡ Uzay çöpleri saatte 28.000 km hızla hareket ediyor"
+];
+const loaderPhases=["Sistem başlatılıyor...","Yıldızlar yükleniyor ✦","Ay yörüngesi hesaplanıyor...","Görev verileri alınıyor...","Astronot dosyaları açılıyor...","Uzay haritası oluşturuluyor...","Fırlatmaya hazır! 🚀"];
+
+// ═══════════ LOADER (ENHANCED) ═══════════
+let loaderProgress=0,loaderPhaseIdx=0;
+const loaderPercentEl=document.getElementById('loaderPercent');
+const loaderBarFill=document.getElementById('loaderBarFill');
+const loaderPhaseEl=document.getElementById('loaderPhase');
+const loaderTipEl=document.getElementById('loaderTip');
+
+// Create warp lines
+const warpContainer=document.getElementById('loaderWarp');
+for(let i=0;i<30;i++){const s=document.createElement('span');s.style.cssText=`left:${Math.random()*100}%;height:${Math.random()*40+20}vh;animation-delay:${Math.random()*0.5}s;animation-duration:${Math.random()*0.3+0.3}s`;warpContainer.appendChild(s);}
+
+let tipIdx=0;
+const tipInterval=setInterval(()=>{tipIdx=(tipIdx+1)%loaderTips.length;loaderTipEl.style.opacity='0';setTimeout(()=>{loaderTipEl.textContent=loaderTips[tipIdx];loaderTipEl.style.opacity='1';},300);},2500);
+
+const loaderInt=setInterval(()=>{
+  loaderProgress+=Math.random()*6+2;
+  if(loaderProgress>100)loaderProgress=100;
+  const p=Math.floor(loaderProgress);
+  loaderPercentEl.textContent=p+'%';
+  loaderBarFill.style.width=p+'%';
+  const phaseTarget=Math.floor((p/100)*loaderPhases.length);
+  if(phaseTarget>loaderPhaseIdx&&phaseTarget<loaderPhases.length){loaderPhaseIdx=phaseTarget;loaderPhaseEl.style.opacity='0';setTimeout(()=>{loaderPhaseEl.textContent=loaderPhases[loaderPhaseIdx];loaderPhaseEl.style.opacity='1';},200);}
+  if(loaderProgress>=100){
+    clearInterval(loaderInt);clearInterval(tipInterval);
+    loaderPhaseEl.textContent='Fırlatma hazır!';
+    // Countdown
+    setTimeout(()=>{
+      const cd=document.getElementById('loaderCountdown');
+      let c=3;
+      cd.textContent=c;cd.classList.add('active');
+      const ci=setInterval(()=>{c--;if(c>0){cd.classList.remove('active');void cd.offsetHeight;cd.textContent=c;cd.classList.add('active');}else{clearInterval(ci);cd.classList.remove('active');void cd.offsetHeight;cd.textContent='🚀';cd.classList.add('active');
+        // Launch!
+        setTimeout(()=>{document.getElementById('loader').classList.add('launching');setTimeout(()=>{document.getElementById('loader').classList.add('hidden');showToast('Hoş Geldin!','MoonStep\'e hoş geldin! Ay\'ı keşfetmeye hazır mısın? 🌙');setTimeout(()=>showToast('İpucu','Kartlara tıklayarak detaylı bilgiye ulaşabilirsin 👆'),5000);setTimeout(()=>showToast('Oyun','🎮 Moon Catcher oyununu denedin mi?',8000),12000);},800);},400);
+      }},800);
+    },600);
+  }
+},100);
+
+// ═══════════ TOAST SYSTEM ═══════════
+function showToast(title,msg,dur=4000){
+  const c=document.getElementById('toastContainer');
+  const t=document.createElement('div');t.className='toast';
+  t.innerHTML=`<div class="toast-title">${title}</div>${msg}`;
+  c.appendChild(t);
+  setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),400);},dur);
+}
+
+// ═══════════ CURSOR ═══════════
+const cursor=document.getElementById('cursor'),cursorDot=document.getElementById('cursorDot');
+let mouseX=0,mouseY=0,curX=0,curY=0;
+document.addEventListener('mousemove',e=>{mouseX=e.clientX;mouseY=e.clientY;cursorDot.style.left=mouseX+'px';cursorDot.style.top=mouseY+'px';createTrail(mouseX,mouseY);});
+function animCursor(){curX+=(mouseX-curX)*.15;curY+=(mouseY-curY)*.15;cursor.style.left=curX+'px';cursor.style.top=curY+'px';requestAnimationFrame(animCursor);}animCursor();
+document.querySelectorAll('a,button,.mission-card,.astro-card,.fact-c,.phase-item,.ld-dot,.team-member,.awareness-card,.ci-card,.calc-planet').forEach(el=>{el.addEventListener('mouseenter',()=>cursor.classList.add('hover'));el.addEventListener('mouseleave',()=>cursor.classList.remove('hover'));});
+let trailT=0;function createTrail(x,y){trailT++;if(trailT%3)return;const p=document.createElement('div');p.className='mouse-particle';p.style.cssText=`left:${x}px;top:${y}px;width:${Math.random()*4+2}px;height:${Math.random()*4+2}px`;document.body.appendChild(p);setTimeout(()=>{p.style.opacity='0';p.style.transform=`translate(${(Math.random()-.5)*30}px,${(Math.random()-.5)*30}px) scale(0)`;},10);setTimeout(()=>p.remove(),600);}
+
+// ═══════════ STARS / BACKGROUND ═══════════
+function createBG(){
+  const l1=document.getElementById('starsLayer1'),l2=document.getElementById('starsLayer2'),l3=document.getElementById('starsLayer3');
+  // Layer 1: distant small stars
+  for(let i=0;i<150;i++){const s=document.createElement('div');s.className='star';const sz=Math.random()*1.5+.3;s.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--d:${Math.random()*5+3}s;--dl:${Math.random()*4}s;--mo:${Math.random()*.2};--xo:${Math.random()*.4+.3}`;l1.appendChild(s);}
+  // Layer 2: medium stars
+  for(let i=0;i<80;i++){const s=document.createElement('div');s.className='star';const sz=Math.random()*2+1;s.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--d:${Math.random()*4+2}s;--dl:${Math.random()*3}s;--mo:${Math.random()*.3+.1};--xo:${Math.random()*.5+.4}`;l2.appendChild(s);}
+  // Layer 3: bright stars
+  for(let i=0;i<30;i++){const s=document.createElement('div');s.className='star';const sz=Math.random()*2.5+1.5;s.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--d:${Math.random()*3+1}s;--dl:${Math.random()*2}s;--mo:${Math.random()*.4+.2};--xo:${Math.random()*.4+.6};box-shadow:0 0 ${sz*3}px rgba(255,255,255,.3)`;l3.appendChild(s);}
+  // Floating particles
+  for(let i=0;i<25;i++){const p=document.createElement('div');p.className='fp';p.style.cssText=`left:${Math.random()*100}%;--dur:${Math.random()*20+10}s;--del:${Math.random()*15}s;--drift:${(Math.random()-.5)*100}px;width:${Math.random()*3+1}px;height:${Math.random()*3+1}px`;l1.appendChild(p);}
+  // Nebulas (more, richer)
+  const nebColors=['rgba(200,169,110,','rgba(74,158,255,','rgba(180,80,200,','rgba(100,200,150,','rgba(255,120,80,','rgba(80,120,255,','rgba(200,100,180,'];
+  for(let i=0;i<12;i++){const n=document.createElement('div');n.className='nebula';const c=nebColors[i%nebColors.length];const sz=Math.random()*600+200;n.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*200-50}%;left:${Math.random()*100}%;background:radial-gradient(circle,${c}0.08),transparent);opacity:${Math.random()*.04+.02}`;l1.appendChild(n);}
+  // Shooting stars
+  for(let i=0;i<8;i++){const ss=document.createElement('div');ss.className='shooting-star';ss.style.cssText=`top:${Math.random()*60}%;left:${Math.random()*60}%;--sd:${Math.random()*15+5}s;--sdd:${Math.random()*12}s;width:${Math.random()*80+40}px`;l2.appendChild(ss);}
+  // Background planets (subtle)
+  const planets=[{t:'15%',l:'85%',sz:6,c:'rgba(200,169,110,.06)'},{t:'70%',l:'10%',sz:4,c:'rgba(74,158,255,.05)'},{t:'45%',l:'92%',sz:3,c:'rgba(180,80,200,.04)'}];
+  planets.forEach(pl=>{const d=document.createElement('div');d.className='bg-planet';d.style.cssText=`top:${pl.t};left:${pl.l};width:${pl.sz}px;height:${pl.sz}px;background:${pl.c};box-shadow:0 0 ${pl.sz*4}px ${pl.c}`;l1.appendChild(d);});
+}
+createBG();
+
+// Parallax on scroll
+window.addEventListener('scroll',()=>{
+  const s=window.scrollY;
+  const l1=document.getElementById('starsLayer1');
+  const l2=document.getElementById('starsLayer2');
+  const l3=document.getElementById('starsLayer3');
+  if(l1)l1.style.transform=`translateY(${s*.02}px)`;
+  if(l2)l2.style.transform=`translateY(${s*.05}px)`;
+  if(l3)l3.style.transform=`translateY(${s*.08}px)`;
+});
+
+// ═══════════ MOON CANVAS (HERO) ═══════════
+function initMoonCanvas(){
+  const cv=document.getElementById('moonCanvas');if(!cv)return;const ctx=cv.getContext('2d');let w,h;
+  function resize(){w=cv.width=cv.offsetWidth;h=cv.height=cv.offsetHeight;}resize();window.addEventListener('resize',resize);
+  const pts=[];for(let i=0;i<60;i++)pts.push({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.5+.3,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,o:Math.random()*.4+.1});
+  function draw(){ctx.clearRect(0,0,w,h);const g=ctx.createRadialGradient(w*.5,h*.4,0,w*.5,h*.4,Math.min(w,h)*.6);g.addColorStop(0,'rgba(200,169,110,.04)');g.addColorStop(.5,'rgba(200,169,110,.01)');g.addColorStop(1,'transparent');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=w;if(p.x>w)p.x=0;if(p.y<0)p.y=h;if(p.y>h)p.y=0;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=`rgba(200,169,110,${p.o})`;ctx.fill();});for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<120){ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.strokeStyle=`rgba(200,169,110,${.03*(1-d/120)})`;ctx.stroke();}}requestAnimationFrame(draw);}draw();
+}initMoonCanvas();
+
+// ═══════════ REALISTIC MOON MAP ═══════════
+function drawMoonMap(){
+  const cv=document.getElementById('moonMap');if(!cv)return;
+  const ctx=cv.getContext('2d');const w=cv.width,h=cv.height,cx=w/2,cy=h/2,r=w/2-10;
+
+  // Base moon sphere
+  const mg=ctx.createRadialGradient(cx-r*.25,cy-r*.25,r*.05,cx,cy,r);
+  mg.addColorStop(0,'#d4cfc0');mg.addColorStop(.2,'#c0b8a8');mg.addColorStop(.5,'#9a9080');mg.addColorStop(.75,'#6a6055');mg.addColorStop(.9,'#4a4038');mg.addColorStop(1,'#2a2520');
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle=mg;ctx.fill();
+
+  // Highlight (light side)
+  const hl=ctx.createRadialGradient(cx-r*.3,cy-r*.3,0,cx,cy,r);
+  hl.addColorStop(0,'rgba(240,235,220,.15)');hl.addColorStop(.4,'rgba(220,215,200,.05)');hl.addColorStop(1,'transparent');
+  ctx.fillStyle=hl;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
+
+  // Mare (dark basalt seas) - realistic placement
+  const mares=[
+    {x:.42,y:.35,rx:.18,ry:.14,rot:-.2,o:.18,name:'Mare Imbrium'},
+    {x:.48,y:.52,rx:.12,ry:.08,rot:.1,o:.15,name:'Mare Tranquillitatis'},
+    {x:.38,y:.55,rx:.1,ry:.07,rot:-.1,o:.14,name:'Oceanus Procellarum'},
+    {x:.55,y:.42,rx:.08,ry:.06,rot:.3,o:.12,name:'Mare Serenitatis'},
+    {x:.35,y:.5,rx:.14,ry:.12,rot:-.3,o:.12,name:'Oceanus Procellarum ext'},
+    {x:.5,y:.62,rx:.06,ry:.04,rot:0,o:.1,name:'Mare Nectaris'},
+    {x:.45,y:.28,rx:.06,ry:.05,rot:.2,o:.1,name:'Mare Frigoris'},
+    {x:.55,y:.58,rx:.05,ry:.04,rot:.1,o:.1,name:'Mare Fecunditatis'},
+  ];
+  mares.forEach(m=>{
+    ctx.save();ctx.translate(cx+(m.x-.5)*2*r,cy+(m.y-.5)*2*r);ctx.rotate(m.rot);
+    const g=ctx.createRadialGradient(0,0,0,0,0,m.rx*r);
+    g.addColorStop(0,`rgba(30,25,20,${m.o})`);g.addColorStop(.7,`rgba(40,35,28,${m.o*.6})`);g.addColorStop(1,'transparent');
+    ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(0,0,m.rx*r,m.ry*r,0,0,Math.PI*2);ctx.fill();ctx.restore();
+  });
+
+  // Major craters with rims
+  const craters=[
+    {x:.6,y:.25,r:.035,d:.2},{x:.35,y:.7,r:.04,d:.22},{x:.7,y:.55,r:.03,d:.18},
+    {x:.25,y:.4,r:.025,d:.15},{x:.55,y:.7,r:.02,d:.14},{x:.65,y:.38,r:.02,d:.12},
+    {x:.3,y:.32,r:.03,d:.16},{x:.5,y:.75,r:.025,d:.14},{x:.72,y:.42,r:.018,d:.12},
+    {x:.22,y:.55,r:.02,d:.13},{x:.68,y:.65,r:.015,d:.1},{x:.45,y:.2,r:.02,d:.12},
+    {x:.58,y:.33,r:.012,d:.08},{x:.32,y:.62,r:.015,d:.1},{x:.75,y:.5,r:.012,d:.08},
+    {x:.28,y:.48,r:.01,d:.07},{x:.62,y:.72,r:.01,d:.06},{x:.4,y:.42,r:.008,d:.05},
+  ];
+  craters.forEach(c=>{
+    const ccx=cx+(c.x-.5)*2*r,ccy=cy+(c.y-.5)*2*r,cr=c.r*r;
+    // Shadow
+    const sg=ctx.createRadialGradient(ccx+cr*.2,ccy+cr*.2,0,ccx,ccy,cr*1.3);
+    sg.addColorStop(0,`rgba(15,12,10,${c.d})`);sg.addColorStop(.5,`rgba(25,20,18,${c.d*.5})`);sg.addColorStop(1,'transparent');
+    ctx.fillStyle=sg;ctx.beginPath();ctx.arc(ccx,ccy,cr*1.3,0,Math.PI*2);ctx.fill();
+    // Rim highlight
+    ctx.strokeStyle=`rgba(180,170,155,${c.d*.3})`;ctx.lineWidth=.5;ctx.beginPath();ctx.arc(ccx,ccy,cr,0,Math.PI*2);ctx.stroke();
+  });
+
+  // Small surface detail craters
+  for(let i=0;i<100;i++){
+    const a=Math.random()*Math.PI*2,dist=Math.random()*r*.9;
+    const x=cx+Math.cos(a)*dist,y=cy+Math.sin(a)*dist;
+    const sr=Math.random()*2+.5;
+    // Check if inside circle
+    if(Math.sqrt((x-cx)**2+(y-cy)**2)>r-5)continue;
+    ctx.fillStyle=`rgba(${Math.random()>0.5?'30,25,20':'60,55,48'},${Math.random()*.08+.02})`;
+    ctx.beginPath();ctx.arc(x,y,sr,0,Math.PI*2);ctx.fill();
+  }
+
+  // Rays (from large craters)
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  [{x:.6,y:.25,count:6,len:.15},{x:.35,y:.7,count:8,len:.18}].forEach(ray=>{
+    const rx=cx+(ray.x-.5)*2*r,ry=cy+(ray.y-.5)*2*r;
+    for(let i=0;i<ray.count;i++){
+      const a=Math.random()*Math.PI*2,len=ray.len*r*(Math.random()*.5+.5);
+      const g=ctx.createLinearGradient(rx,ry,rx+Math.cos(a)*len,ry+Math.sin(a)*len);
+      g.addColorStop(0,'rgba(200,195,180,.04)');g.addColorStop(1,'transparent');
+      ctx.strokeStyle=g;ctx.lineWidth=Math.random()*3+1;ctx.beginPath();ctx.moveTo(rx,ry);ctx.lineTo(rx+Math.cos(a)*len,ry+Math.sin(a)*len);ctx.stroke();
+    }
+  });
+  ctx.restore();
+
+  // Terminator (shadow edge for 3D)
+  const tg=ctx.createLinearGradient(cx+r*.6,0,cx+r*1.1,0);
+  tg.addColorStop(0,'transparent');tg.addColorStop(.5,'rgba(0,0,0,.15)');tg.addColorStop(1,'rgba(0,0,0,.4)');
+  ctx.fillStyle=tg;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();
+
+  // Atmosphere glow
+  const ag=ctx.createRadialGradient(cx,cy,r*.95,cx,cy,r*1.15);
+  ag.addColorStop(0,'transparent');ag.addColorStop(.5,'rgba(200,169,110,.04)');ag.addColorStop(1,'transparent');
+  ctx.fillStyle=ag;ctx.fillRect(0,0,w,h);
+
+  // Outer glow
+  ctx.shadowColor='rgba(200,169,110,.15)';ctx.shadowBlur=60;ctx.beginPath();ctx.arc(cx,cy,r+2,0,Math.PI*2);ctx.strokeStyle='rgba(200,169,110,.05)';ctx.lineWidth=1;ctx.stroke();ctx.shadowBlur=0;
+}
+drawMoonMap();
+
+// Map tooltips
+const mapTT=document.getElementById('mapTooltip');
+document.querySelectorAll('.ld-dot').forEach(d=>{
+  d.addEventListener('mouseenter',()=>{mapTT.innerHTML=`<strong>${d.dataset.name}</strong>${d.dataset.info}`;const wr=document.getElementById('moonMapWrap').getBoundingClientRect(),dr=d.getBoundingClientRect();mapTT.style.left=(dr.left-wr.left+20)+'px';mapTT.style.top=(dr.top-wr.top-10)+'px';mapTT.classList.add('show');});
+  d.addEventListener('mouseleave',()=>mapTT.classList.remove('show'));
+});
+
+// ═══════════ NAV ═══════════
+const nav=document.getElementById('nav');
+window.addEventListener('scroll',()=>{nav.classList.toggle('scrolled',scrollY>50);document.getElementById('scrollTop').classList.toggle('show',scrollY>400);});
+function toggleMobileMenu(){document.getElementById('hamburger').classList.toggle('active');document.getElementById('mobileMenu').classList.toggle('open');}
+function closeMobileMenu(){document.getElementById('hamburger').classList.remove('active');document.getElementById('mobileMenu').classList.remove('open');}
+
+// ═══════════ ASTRO POPUP ═══════════
+function openAstroPopup(){document.getElementById('astroOverlay').classList.add('active');document.getElementById('astroPopup').classList.add('active');}
+function closeAstroPopup(){document.getElementById('astroOverlay').classList.remove('active');document.getElementById('astroPopup').classList.remove('active');}
+document.getElementById('astroOverlay').addEventListener('click',closeAstroPopup);
+
+// ═══════════ TYPED EFFECT ═══════════
+const typedS=['"İnsanlık için dev bir sıçrama..." — Neil Armstrong','384,400 km ötede, bir dünya bizi bekliyor.','Apollo: 6 iniş, 12 astronot, sonsuz ilham.','Artemis ile yeniden Ay\'a — bu sefer kalıcı olarak.','🚀 Astro Hackathon 2025 — Geleceği Kodluyoruz'];
+let tI=0,cI=0,isDel=false;
+function typeEff(){const el=document.getElementById('heroTyped');if(!el)return;const c=typedS[tI];el.innerHTML=c.substring(0,cI)+'<span class="typed-cursor">|</span>';if(!isDel){cI++;if(cI>c.length){setTimeout(()=>{isDel=true;typeEff();},2000);return;}}else{cI--;if(cI<0){isDel=false;tI=(tI+1)%typedS.length;cI=0;}}setTimeout(typeEff,isDel?30:60);}typeEff();
+
+// ═══════════ REVEAL + COUNTERS ═══════════
+const rObs=new IntersectionObserver(e=>{e.forEach(en=>{if(en.isIntersecting)en.target.classList.add('visible');});},{threshold:.1});
+document.querySelectorAll('.reveal').forEach(el=>rObs.observe(el));
+
+const cObs=new IntersectionObserver(e=>{e.forEach(en=>{if(en.isIntersecting&&!en.target.dataset.counted){en.target.dataset.counted='true';const t=parseInt(en.target.dataset.count),dur=2000,st=performance.now();function up(now){const p=Math.min((now-st)/dur,1),eased=1-Math.pow(1-p,3);en.target.textContent=Math.floor(eased*t).toLocaleString('tr-TR');if(p<1)requestAnimationFrame(up);}requestAnimationFrame(up);}});},{threshold:.3});
+document.querySelectorAll('[data-count]').forEach(el=>cObs.observe(el));
+
+// ═══════════ LIVE MOON DISTANCE ═══════════
+function updateMoonDist(){const el=document.getElementById('liveMoonDist');const bar=document.getElementById('ldBarFill');if(!el)return;const now=Date.now(),period=27.321661*24*3600*1000,phase=((now%period)/period)*Math.PI*2;const avg=384400,ecc=25100,dist=avg+ecc*Math.cos(phase);el.textContent=Math.round(dist).toLocaleString('tr-TR')+' km';const pct=((dist-356500)/(406700-356500))*100;if(bar)bar.style.width=pct+'%';}
+updateMoonDist();setInterval(updateMoonDist,3000);
+
+// ═══════════ WEIGHT CALC ═══════════
+const planets=[{n:'Ay',i:'🌙',g:.166},{n:'Mars',i:'🔴',g:.378},{n:'Jüpiter',i:'🟠',g:2.528},{n:'Venüs',i:'🟡',g:.907},{n:'Merkür',i:'⚫',g:.378},{n:'Satürn',i:'🪐',g:1.065}];
+function calcW(){const w=parseFloat(document.getElementById('weightInput').value)||70;document.getElementById('calcResult').innerHTML=planets.map(p=>`<div class="calc-planet"><div class="cp-icon">${p.i}</div><div class="cp-name">${p.n}</div><div class="cp-val">${(w*p.g).toFixed(1)}</div><div class="cp-unit">kg</div></div>`).join('');}
+calcW();document.getElementById('weightInput').addEventListener('input',calcW);
+
+// ═══════════ DETAIL MODALS ═══════════
+function openMissionDetail(id){const d=missionDetails[id];if(!d)return;document.getElementById('detailModalBody').innerHTML=`<div class="modal-header"><div class="modal-avatar">${d.emoji}</div><div class="modal-header-info"><h2>${d.name}</h2><div class="mh-role">${d.role}</div><div class="mh-dates">${d.dates}</div></div></div><div class="modal-body"><div class="modal-quote">${d.quote}</div><div class="modal-crew">${d.crew.map(c=>`<div class="modal-crew-member"><strong>${c.name}</strong><span>${c.role}</span></div>`).join('')}</div><div class="modal-text">${d.text}</div><div class="modal-stats">${d.stats.map(s=>`<div class="modal-stat"><span class="modal-stat-val">${s.v}</span><span class="modal-stat-lbl">${s.l}</span></div>`).join('')}</div><h4 style="font-size:.85rem;margin-bottom:10px;color:var(--accent)">📌 İlginç Detaylar</h4><div class="modal-facts">${d.facts.map(f=>`<div class="modal-fact">${f}</div>`).join('')}</div></div>`;document.getElementById('detailModal').classList.add('active');}
+function openAstroDetail(id){const d=astroDetails[id];if(!d)return;document.getElementById('detailModalBody').innerHTML=`<div class="modal-header"><div class="modal-avatar">${d.emoji}</div><div class="modal-header-info"><h2>${d.name}</h2><div class="mh-role">${d.role}</div><div class="mh-dates">${d.dates}</div></div></div><div class="modal-body"><div class="modal-quote">${d.quote}</div><div class="modal-text">${d.text}</div><div class="modal-stats">${d.stats.map(s=>`<div class="modal-stat"><span class="modal-stat-val">${s.v}</span><span class="modal-stat-lbl">${s.l}</span></div>`).join('')}</div><h4 style="font-size:.85rem;margin-bottom:10px;color:var(--accent)">📌 İlginç Detaylar</h4><div class="modal-facts">${d.facts.map(f=>`<div class="modal-fact">${f}</div>`).join('')}</div></div>`;document.getElementById('detailModal').classList.add('active');}
+function closeDetailModal(){document.getElementById('detailModal').classList.remove('active');}
+document.getElementById('detailModal').addEventListener('click',e=>{if(e.target===document.getElementById('detailModal'))closeDetailModal();});
+
+// ═══════════ QUIZ ═══════════
+let qIdx=0,qCorr=0,qAns=false;
+function startQuiz(){qIdx=0;qCorr=0;document.getElementById('quizScore').style.display='none';document.getElementById('quizProgress').style.display='';document.getElementById('quizBar').parentElement.style.display='';renderQ();}
+function renderQ(){const q=quizData[qIdx];qAns=false;document.getElementById('quizProgress').textContent=`SORU ${qIdx+1} / ${quizData.length}`;document.getElementById('quizBar').style.width=((qIdx+1)/quizData.length*100)+'%';document.getElementById('quizQ').textContent=q.q;document.getElementById('quizFb').textContent='';document.getElementById('quizNext').style.display='none';document.getElementById('quizOpts').innerHTML=q.o.map((o,i)=>`<button class="qopt" onclick="ansQ(${i})">${o}</button>`).join('');}
+function ansQ(i){if(qAns)return;qAns=true;const q=quizData[qIdx];document.querySelectorAll('.qopt').forEach((b,j)=>{b.style.pointerEvents='none';if(j===q.a)b.classList.add('correct');if(j===i&&i!==q.a)b.classList.add('wrong');});if(i===q.a)qCorr++;document.getElementById('quizFb').textContent=q.fb;document.getElementById('quizNext').style.display='inline-flex';}
+function nextQuizQ(){qIdx++;if(qIdx>=quizData.length){showQResult();return;}renderQ();}
+function showQResult(){document.getElementById('quizProgress').style.display='none';document.getElementById('quizBar').parentElement.style.display='none';document.getElementById('quizQ').textContent='';document.getElementById('quizOpts').innerHTML='';document.getElementById('quizFb').textContent='';document.getElementById('quizNext').style.display='none';document.getElementById('quizScoreNum').textContent=qCorr+'/'+quizData.length;let m='';if(qCorr===10)m='🏆 Mükemmel! Tam puan!';else if(qCorr>=8)m='🌟 Harika bilgi!';else if(qCorr>=6)m='👍 İyi!';else if(qCorr>=4)m='📚 Geliştirebilirsin!';else m='🔭 Daha çok öğrenecek var!';document.getElementById('quizScoreMsg').textContent=m;document.getElementById('quizScore').style.display='block';}
+startQuiz();
+
+// ═══════════════════════════════════════
+// ═══════════ GAME: MOON CATCHER ═══════
+// ═══════════════════════════════════════
+let gameActive=false,gameAnimId=null,gs={};
+
+function openGame(){document.getElementById('gameOverlay').classList.add('active');document.getElementById('gameStart').style.display='flex';document.getElementById('gameMessage').classList.remove('show');document.body.style.overflow='hidden';}
+function closeGame(){document.getElementById('gameOverlay').classList.remove('active');gameActive=false;if(gameAnimId)cancelAnimationFrame(gameAnimId);document.body.style.overflow='';}
+
+function startGame(){
+  const cv=document.getElementById('gameCanvas'),ctx=cv.getContext('2d');
+  cv.width=cv.offsetWidth;cv.height=cv.offsetHeight;
+  document.getElementById('gameStart').style.display='none';
+  document.getElementById('gameMessage').classList.remove('show');
+
+  gs={
+    p:{x:cv.width/2,y:cv.height-80,w:50,h:50,speed:7},
+    moons:[],debris:[],stars:[],shields:[],magnets:[],particles:[],bgStars:[],
+    score:0,hp:100,maxHp:100,level:1,spawnT:0,frame:0,
+    keys:{},baseSpd:2.2,spdMul:1,
+    combo:0,comboT:0,maxCombo:0,
+    moonsCaught:0,debrisHit:0,starsGot:0,
+    shieldActive:false,shieldTimer:0,
+    magnetActive:false,magnetTimer:0,
+    screenShake:0
+  };
+
+  // BG stars
+  for(let i=0;i<100;i++)gs.bgStars.push({x:Math.random()*cv.width,y:Math.random()*cv.height,s:Math.random()*1.5+.3,o:Math.random()*.4+.1,sp:Math.random()*.3+.05});
+
+  gameActive=true;
+  updateGameUI();
+
+  document.onkeydown=e=>{gs.keys[e.key]=true;if(e.key===' '||e.key==='Escape')e.preventDefault();if(e.key==='Escape')closeGame();};
+  document.onkeyup=e=>{gs.keys[e.key]=false;};
+  let touchX=null;
+  cv.ontouchstart=e=>{touchX=e.touches[0].clientX;e.preventDefault();};
+  cv.ontouchmove=e=>{if(touchX!==null){gs.p.x+=e.touches[0].clientX-touchX;touchX=e.touches[0].clientX;}e.preventDefault();};
+  cv.ontouchend=()=>{touchX=null;};
+
+  function loop(){if(!gameActive)return;update();render();gameAnimId=requestAnimationFrame(loop);}
+
+  function update(){
+    const s=gs,p=s.p;s.frame++;
+    if(s.keys['ArrowLeft']||s.keys['a'])p.x-=p.speed;
+    if(s.keys['ArrowRight']||s.keys['d'])p.x+=p.speed;
+    p.x=Math.max(p.w/2,Math.min(cv.width-p.w/2,p.x));
+
+    // Level
+    const nl=Math.floor(s.score/100)+1;
+    if(nl>s.level){s.level=nl;s.spdMul=1+(s.level-1)*.2;}
+
+    s.spawnT++;
+    const sr=Math.max(18,50-s.level*3);
+
+    // Spawn moons
+    if(s.spawnT%sr===0)s.moons.push({x:Math.random()*(cv.width-40)+20,y:-30,r:18,sp:(s.baseSpd+Math.random()*1.5)*s.spdMul,rot:0,rs:(Math.random()-.5)*.05});
+
+    // Spawn debris (space junk!)
+    const debrisRate=Math.max(22,55-s.level*4);
+    if(s.spawnT%debrisRate===0){
+      const type=Math.floor(Math.random()*4); // 0=satellite,1=panel,2=bolt,3=tank
+      s.debris.push({x:Math.random()*(cv.width-30)+15,y:-30,r:12+Math.random()*10,sp:(s.baseSpd+.5+Math.random()*2)*s.spdMul,rot:0,rs:(Math.random()-.5)*.12,wobble:Math.random()*2-1,type,dmg:type===3?30:type===0?25:15});
+    }
+
+    // Bonus stars
+    if(s.spawnT%Math.max(70,160-s.level*8)===0)s.stars.push({x:Math.random()*(cv.width-30)+15,y:-30,r:12,sp:(s.baseSpd+1)*s.spdMul,pulse:0});
+
+    // Shield powerup
+    if(s.spawnT%Math.max(200,400-s.level*15)===0)s.shields.push({x:Math.random()*(cv.width-30)+15,y:-30,r:14,sp:s.baseSpd*s.spdMul,pulse:0});
+
+    // Magnet powerup
+    if(s.spawnT%Math.max(250,500-s.level*15)===0)s.magnets.push({x:Math.random()*(cv.width-30)+15,y:-30,r:14,sp:s.baseSpd*s.spdMul,pulse:0});
+
+    // Timers
+    if(s.shieldTimer>0){s.shieldTimer--;if(s.shieldTimer<=0)s.shieldActive=false;}
+    if(s.magnetTimer>0){s.magnetTimer--;if(s.magnetTimer<=0)s.magnetActive=false;}
+    if(s.comboT>0)s.comboT--;else s.combo=0;
+    if(s.screenShake>0)s.screenShake--;
+
+    // Magnet attract moons
+    if(s.magnetActive){s.moons.forEach(m=>{const dx=p.x-m.x,dy=p.y-m.y,d=Math.sqrt(dx*dx+dy*dy);if(d<200){m.x+=dx/d*3;m.y+=dy/d*3;}});}
+
+    // Update moons
+    s.moons=s.moons.filter(m=>{m.y+=m.sp;m.rot+=m.rs;if(m.y>cv.height+30)return false;if(col(p,m)){s.score+=10;s.combo++;s.comboT=90;s.moonsCaught++;if(s.combo>s.maxCombo)s.maxCombo=s.combo;if(s.combo>=3)s.score+=s.combo*3;spawnP(m.x,m.y,'#c8a96e',8);updateGameUI();return false;}return true;});
+
+    // Update debris
+    s.debris=s.debris.filter(d=>{d.y+=d.sp;d.x+=Math.sin(d.y*.015)*d.wobble;d.rot+=d.rs;if(d.y>cv.height+30)return false;if(col(p,d)){if(s.shieldActive){spawnP(d.x,d.y,'#4a9eff',10);s.score+=5;return false;}s.hp-=d.dmg;s.debrisHit++;s.screenShake=8;s.combo=0;spawnP(d.x,d.y,'#e05a5a',12);updateGameUI();if(s.hp<=0){s.hp=0;endGame();}return false;}return true;});
+
+    // Update stars
+    s.stars=s.stars.filter(st=>{st.y+=st.sp;st.pulse+=.1;if(st.y>cv.height+30)return false;if(col(p,st)){s.score+=25;s.starsGot++;spawnP(st.x,st.y,'#4a9eff',15);updateGameUI();return false;}return true;});
+
+    // Update shields
+    s.shields=s.shields.filter(sh=>{sh.y+=sh.sp;sh.pulse+=.08;if(sh.y>cv.height+30)return false;if(col(p,sh)){s.shieldActive=true;s.shieldTimer=300;spawnP(sh.x,sh.y,'#4af0ff',12);updateGameUI();return false;}return true;});
+
+    // Update magnets
+    s.magnets=s.magnets.filter(mg=>{mg.y+=mg.sp;mg.pulse+=.1;if(mg.y>cv.height+30)return false;if(col(p,mg)){s.magnetActive=true;s.magnetTimer=240;spawnP(mg.x,mg.y,'#f0a030',12);updateGameUI();return false;}return true;});
+
+    // Particles
+    s.particles=s.particles.filter(pt=>{pt.x+=pt.vx;pt.y+=pt.vy;pt.life--;pt.vy+=.1;return pt.life>0;});
+
+    // BG stars
+    s.bgStars.forEach(st=>{st.y+=st.sp;if(st.y>cv.height){st.y=0;st.x=Math.random()*cv.width;}});
+  }
+
+  function col(pl,o){const dx=pl.x-o.x,dy=pl.y-o.y;return Math.sqrt(dx*dx+dy*dy)<pl.w/2+o.r;}
+
+  function spawnP(x,y,c,n){for(let i=0;i<n;i++)gs.particles.push({x,y,vx:(Math.random()-.5)*7,vy:(Math.random()-.5)*7-2,life:30+Math.random()*25,color:c,r:Math.random()*3+1});}
+
+  function render(){
+    const s=gs;ctx.clearRect(0,0,cv.width,cv.height);
+
+    // Screen shake
+    ctx.save();
+    if(s.screenShake>0){ctx.translate((Math.random()-.5)*s.screenShake*1.5,(Math.random()-.5)*s.screenShake*1.5);}
+
+    ctx.fillStyle='#030810';ctx.fillRect(0,0,cv.width,cv.height);
+
+    // BG
+    s.bgStars.forEach(st=>{ctx.beginPath();ctx.arc(st.x,st.y,st.s,0,Math.PI*2);ctx.fillStyle=`rgba(255,255,255,${st.o})`;ctx.fill();});
+
+    // Particles
+    s.particles.forEach(pt=>{ctx.beginPath();ctx.arc(pt.x,pt.y,pt.r*(pt.life/50),0,Math.PI*2);ctx.fillStyle=pt.color;ctx.globalAlpha=pt.life/50;ctx.fill();ctx.globalAlpha=1;});
+
+    // Player (rocket)
+    ctx.save();ctx.translate(s.p.x,s.p.y);
+    if(s.shieldActive){const sg=ctx.createRadialGradient(0,0,20,0,0,40);sg.addColorStop(0,'rgba(74,240,255,.1)');sg.addColorStop(1,'transparent');ctx.fillStyle=sg;ctx.fillRect(-40,-40,80,80);ctx.strokeStyle='rgba(74,240,255,.4)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,0,30,0,Math.PI*2);ctx.stroke();}
+    if(s.magnetActive){ctx.strokeStyle='rgba(240,160,48,.3)';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(0,0,200,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);}
+    ctx.fillStyle='#e8e4d8';ctx.beginPath();ctx.moveTo(0,-25);ctx.lineTo(-15,15);ctx.lineTo(-8,10);ctx.lineTo(0,20);ctx.lineTo(8,10);ctx.lineTo(15,15);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#4a9eff';ctx.beginPath();ctx.arc(0,-5,5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=`hsl(${30+Math.random()*20},100%,${50+Math.random()*20}%)`;ctx.beginPath();ctx.moveTo(-6,20);ctx.lineTo(0,30+Math.random()*12);ctx.lineTo(6,20);ctx.fill();
+    ctx.restore();
+
+    // Moons
+    s.moons.forEach(m=>{ctx.save();ctx.translate(m.x,m.y);ctx.rotate(m.rot);const mg=ctx.createRadialGradient(-3,-3,0,0,0,m.r);mg.addColorStop(0,'#f5f0e0');mg.addColorStop(.6,'#c8a96e');mg.addColorStop(1,'#8a7040');ctx.beginPath();ctx.arc(0,0,m.r,0,Math.PI*2);ctx.fillStyle=mg;ctx.fill();ctx.fillStyle='rgba(0,0,0,.1)';ctx.beginPath();ctx.arc(-4,-5,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(5,3,2,0,Math.PI*2);ctx.fill();ctx.restore();});
+
+    // Debris (SPACE JUNK!) — different types
+    s.debris.forEach(d=>{
+      ctx.save();ctx.translate(d.x,d.y);ctx.rotate(d.rot);
+      if(d.type===0){
+        // Broken satellite
+        ctx.fillStyle='#5a5a6a';ctx.fillRect(-d.r*.6,-d.r*.3,d.r*1.2,d.r*.6);
+        ctx.fillStyle='#3a3a4a';ctx.fillRect(-d.r*1.1,-d.r*.15,d.r*.5,d.r*.3);
+        ctx.fillRect(d.r*.6,-d.r*.15,d.r*.5,d.r*.3);
+        ctx.fillStyle='#4a6a8a';ctx.fillRect(-d.r*1.1,-d.r*.12,d.r*.45,d.r*.24);
+        ctx.fillRect(d.r*.65,-d.r*.12,d.r*.45,d.r*.24);
+        // Damage marks
+        ctx.strokeStyle='rgba(255,100,50,.4)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-3,-2);ctx.lineTo(4,3);ctx.stroke();
+      }else if(d.type===1){
+        // Solar panel debris
+        ctx.fillStyle='#2a3a5a';ctx.fillRect(-d.r*.8,-d.r*.5,d.r*1.6,d.r*1);
+        // Grid lines
+        ctx.strokeStyle='rgba(100,150,200,.3)';ctx.lineWidth=.5;
+        for(let i=-3;i<=3;i++){ctx.beginPath();ctx.moveTo(i*d.r*.25,-d.r*.5);ctx.lineTo(i*d.r*.25,d.r*.5);ctx.stroke();}
+        for(let i=-2;i<=2;i++){ctx.beginPath();ctx.moveTo(-d.r*.8,i*d.r*.25);ctx.lineTo(d.r*.8,i*d.r*.25);ctx.stroke();}
+        // Broken corner
+        ctx.fillStyle='#030810';ctx.beginPath();ctx.moveTo(d.r*.5,-d.r*.5);ctx.lineTo(d.r*.8,-d.r*.5);ctx.lineTo(d.r*.8,-d.r*.2);ctx.fill();
+      }else if(d.type===2){
+        // Metal bolt/fragment
+        ctx.fillStyle='#8a8080';
+        ctx.beginPath();for(let i=0;i<6;i++){const a=(i/6)*Math.PI*2,rr=d.r*(i%2===0?.9:.5);ctx.lineTo(Math.cos(a)*rr,Math.sin(a)*rr);}ctx.closePath();ctx.fill();
+        ctx.strokeStyle='#6a6060';ctx.lineWidth=1;ctx.stroke();
+      }else{
+        // Fuel tank
+        ctx.fillStyle='#7a6a5a';ctx.beginPath();
+        ctx.ellipse(0,0,d.r*.5,d.r*.8,0,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle='#5a4a3a';ctx.lineWidth=1;ctx.stroke();
+        ctx.fillStyle='rgba(255,100,30,.15)';ctx.beginPath();ctx.arc(d.r*.2,d.r*.3,d.r*.2,0,Math.PI*2);ctx.fill();
+        // Warning stripe
+        ctx.fillStyle='rgba(255,200,0,.3)';ctx.fillRect(-d.r*.4,-d.r*.05,d.r*.8,d.r*.1);
+      }
+      ctx.restore();
+    });
+
+    // Bonus stars
+    s.stars.forEach(st=>{ctx.save();ctx.translate(st.x,st.y);const pulse=1+Math.sin(st.pulse)*.2;ctx.scale(pulse,pulse);ctx.fillStyle='#4a9eff';ctx.beginPath();for(let i=0;i<5;i++){const a1=(i*72-90)*Math.PI/180,a2=((i*72)+36-90)*Math.PI/180;ctx.lineTo(Math.cos(a1)*st.r,Math.sin(a1)*st.r);ctx.lineTo(Math.cos(a2)*st.r*.4,Math.sin(a2)*st.r*.4);}ctx.closePath();ctx.fill();ctx.restore();});
+
+    // Shield powerups
+    s.shields.forEach(sh=>{ctx.save();ctx.translate(sh.x,sh.y);const p=1+Math.sin(sh.pulse)*.15;ctx.scale(p,p);ctx.strokeStyle='#4af0ff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,sh.r,0,Math.PI*2);ctx.stroke();ctx.fillStyle='rgba(74,240,255,.15)';ctx.fill();ctx.font='bold 14px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#4af0ff';ctx.fillText('🛡️',0,1);ctx.restore();});
+
+    // Magnet powerups
+    s.magnets.forEach(mg=>{ctx.save();ctx.translate(mg.x,mg.y);const p=1+Math.sin(mg.pulse)*.15;ctx.scale(p,p);ctx.strokeStyle='#f0a030';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,mg.r,0,Math.PI*2);ctx.stroke();ctx.fillStyle='rgba(240,160,48,.15)';ctx.fill();ctx.font='bold 14px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#f0a030';ctx.fillText('🧲',0,1);ctx.restore();});
+
+    // Combo
+    if(s.combo>=3&&s.comboT>0){ctx.fillStyle=`rgba(200,169,110,${s.comboT/90})`;ctx.font='bold 26px "Space Mono"';ctx.textAlign='center';ctx.fillText(`COMBO x${s.combo}!`,cv.width/2,100);}
+
+    // Level watermark
+    ctx.fillStyle='rgba(74,158,255,.08)';ctx.font='bold 100px "Space Mono"';ctx.textAlign='center';ctx.fillText(`${s.level}`,cv.width/2,cv.height/2+30);
+    ctx.font='bold 14px "Space Mono"';ctx.fillText('SEVİYE',cv.width/2,cv.height/2-40);
+
+    ctx.restore(); // end shake
+  }
+
+  function updateGameUI(){
+    const s=gs;
+    const scoreEl=document.getElementById('gameScore');
+    scoreEl.textContent=`SKOR: ${s.score}`;
+    scoreEl.classList.remove('pop');void scoreEl.offsetHeight;scoreEl.classList.add('pop');
+    document.getElementById('gameLevel').textContent=`SEVİYE ${s.level}`;
+    // Combo
+    const comboEl=document.getElementById('gameCombo');
+    if(s.combo>=2){comboEl.textContent=`COMBO x${s.combo}`;comboEl.classList.add('show');}else{comboEl.classList.remove('show');}
+    // Health bar
+    const hpPct=Math.max(0,(s.hp/s.maxHp)*100);
+    document.getElementById('healthFill').style.width=hpPct+'%';
+    document.getElementById('healthText').textContent=Math.round(hpPct)+'%';
+    if(s.hp<s.maxHp){const hb=document.getElementById('healthBar');hb.classList.remove('damage');void hb.offsetHeight;hb.classList.add('damage');}
+    // Shield
+    const si=document.getElementById('shieldInd');
+    if(s.shieldActive){si.classList.add('show');si.textContent=`🛡️ KALKAN: ${Math.ceil(s.shieldTimer/60)}s`;}else{si.classList.remove('show');}
+  }
+
+  function endGame(){
+    gameActive=false;const s=gs;
+    document.getElementById('gmTitle').textContent=s.score>=300?'🏆 Efsanevi!':s.score>=200?'🌟 Muhteşem!':s.score>=100?'👍 İyi Oyun!':'🚀 Tekrar Dene!';
+    document.getElementById('gmStats').innerHTML=`<div class="gm-stat"><strong>${s.moonsCaught}</strong><span>Ay Toplandı</span></div><div class="gm-stat"><strong>${s.debrisHit}</strong><span>Çöp Çarpması</span></div><div class="gm-stat"><strong>${s.starsGot}</strong><span>Yıldız</span></div><div class="gm-stat"><strong>x${s.maxCombo}</strong><span>Max Combo</span></div><div class="gm-stat"><strong>${s.level}</strong><span>Seviye</span></div>`;
+    document.getElementById('gmAwareness').textContent=gameAwareness[Math.floor(Math.random()*gameAwareness.length)];
+    document.getElementById('gmFact').textContent='💡 '+gameFacts[Math.floor(Math.random()*gameFacts.length)];
+    // Animated score
+    const se=document.getElementById('gmScore');let ds=0;
+    const si=setInterval(()=>{ds+=Math.ceil(s.score/30);if(ds>=s.score){ds=s.score;clearInterval(si);}se.textContent=ds;},30);
+    document.getElementById('gameMessage').classList.add('show');
+  }
+
+  loop();
+}
+
+// ═══════════ AUDIO ═══════════
+let audioCtx,audioPlaying=false;
+function toggleAudio(){const b=document.getElementById('audioToggle');if(!audioPlaying){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();playAmb();audioPlaying=true;b.textContent='🔊';b.classList.add('active');}else{if(audioCtx)audioCtx.suspend();audioPlaying=false;b.textContent='🔇';b.classList.remove('active');}}
+function playAmb(){if(!audioCtx)return;audioCtx.resume();function drone(f){const o=audioCtx.createOscillator(),g=audioCtx.createGain(),fl=audioCtx.createBiquadFilter();o.type='sine';o.frequency.value=f;fl.type='lowpass';fl.frequency.value=300;g.gain.value=.02;o.connect(fl);fl.connect(g);g.connect(audioCtx.destination);o.start();const l=audioCtx.createOscillator(),lg=audioCtx.createGain();l.frequency.value=.1;lg.gain.value=2;l.connect(lg);lg.connect(o.frequency);l.start();}drone(60);drone(90);drone(120);}
+
+// ═══════════ KEYBOARD ═══════════
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDetailModal();closeAstroPopup();}});
+document.querySelectorAll('a[href^="#"]').forEach(a=>{a.addEventListener('click',e=>{const t=document.querySelector(a.getAttribute('href'));if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'});}});});
+
+// ═══════════ SECTION POPUPS (random tips) ═══════════
+let popupShown={};
+const sectionPopups={awareness:'🛰️ Dünya yörüngesindeki çöpler hakkında düşündün mü?',missions:'🚀 Görev kartlarına tıklayarak detaylara ulaşabilirsin!',astronauts:'👨‍🚀 Astronot kartlarında detaylı biyografiler var!',moonmap:'🗺️ Haritadaki noktaların üzerine gel — bilgi göreceksin!',quiz:'❓ 10 soruyla Ay bilgini test et!',facts:'💡 Bu bilgileri arkadaşlarınla paylaş!'};
+const popObs=new IntersectionObserver(e=>{e.forEach(en=>{if(en.isIntersecting){const id=en.target.id;if(id&&sectionPopups[id]&&!popupShown[id]){popupShown[id]=true;setTimeout(()=>showToast('İpucu',sectionPopups[id],3500),800);}}});},{threshold:.3});
+document.querySelectorAll('section[id]').forEach(s=>popObs.observe(s));
+
+console.log('%c🌙 MoonStep','font-size:24px;color:#c8a96e;font-weight:bold');
+console.log('%cAstro Hackathon 2025 — Notorious Team','font-size:12px;color:#4a9eff');
+</script>
+</body>
+</html>
